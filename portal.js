@@ -15,7 +15,8 @@
     { id: 'rotatividade', title: 'Rotatividade do Hostel', icon: 'cama', name: 'Rotatividade (camareira)', desc: 'Limpeza por cama e por dia.', path: 'modules/rotatividade/index.html', roles: ['admin', 'camareira'] },
     { id: 'lsr', title: 'Lavanderia do Hostel', icon: 'lavanderia', name: 'Lavanderia', desc: 'Produção, inventário, qualidade e rotatividade do enxoval (SR e MK).', path: 'modules/lsr/index.html', roles: ['admin', 'lavanderia'] },
     { id: 'hostel', title: 'Reservas — Hostel MK', icon: 'calendario', name: 'Reservas — Hostel MK', desc: 'Reservas, calendário e mapa de ocupação.', path: 'modules/hostel/index.html', roles: ['admin'] },
-    { id: 'gestao', title: 'Gestão do Hostel', icon: 'custos', name: 'Gestão de custos', desc: 'Custos fixos e variáveis e custo por quarto.', path: 'modules/gestao/index.html', roles: ['admin'] }
+    { id: 'gestao', title: 'Gestão do Hostel', icon: 'custos', name: 'Gestão de custos', desc: 'Custos fixos e variáveis e custo por quarto.', path: 'modules/gestao/index.html', roles: ['admin'] },
+    { id: 'financeiro', title: 'Financeiro do Hostel', icon: 'custos', name: 'Financeiro', desc: 'Receitas e despesas por unidade (SR e MK), gráficos e projeção.', path: 'modules/financeiro/index.html', roles: ['admin'] }
   ];
   var ROLE_LABEL = { admin: 'Acesso geral (admin)', lavanderia: 'Só lavanderia', camareira: 'Só camareira', pendente: 'Pendente (sem acesso)', bloqueado: 'Bloqueado (sem acesso)' };
 
