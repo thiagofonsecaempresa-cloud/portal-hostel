@@ -1,0 +1,422 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<script src="../../shim.js"></script>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#173f35">
+<title>Rotatividade do Hostel v5</title>
+<style>
+:root{--green:#173f35;--green2:#dcebe4;--paper:#f7f8f5;--ink:#17211d;--muted:#65716b;--line:#d7ded9;--blue:#e7f1f8;--orange:#fff0dc;--red:#fbe6e4;--white:#fff}
+*{box-sizing:border-box}body{margin:0;background:var(--paper);color:var(--ink);font:15px/1.45 system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
+header{background:var(--green);color:#fff;padding:20px max(16px,env(safe-area-inset-left));}
+header h1{font-size:clamp(22px,4vw,30px);margin:0 0 4px}header p{margin:0;color:#e1eee8;font-size:14px}
+main{max-width:1500px;margin:auto;padding:16px}
+.panel{background:white;border:1px solid var(--line);border-radius:14px;padding:14px;margin:0 0 14px;box-shadow:0 2px 8px #173f3508}
+.toolbar{display:flex;gap:10px;align-items:end;flex-wrap:wrap}.field{display:flex;flex-direction:column;gap:5px;font-size:13px;color:var(--muted)}
+input,select,button{font:inherit;border:1px solid #bdc9c2;border-radius:9px;padding:10px;background:white;color:var(--ink)}
+button{cursor:pointer;font-weight:650}button.primary{background:var(--green);color:white;border-color:var(--green)}button.soft{background:var(--green2);border-color:var(--green2)}button.danger{color:#8b2520}
+.actions{display:flex;gap:8px;flex-wrap:wrap}.hint{color:var(--muted);font-size:13px;margin:9px 0 0}
+.legend{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}.tag{border-radius:7px;padding:5px 9px;font-size:12px;font-weight:700;border:1px solid var(--line)}
+.tag.l{background:var(--green2)}.tag.ls{background:var(--orange)}.tag.x{background:#e9edf0}.tag.blank{background:white}
+.cards{display:grid;grid-template-columns:repeat(4,minmax(130px,1fr));gap:10px}
+.metric{background:#fff;border:1px solid var(--line);border-radius:12px;padding:12px}.metric .label{font-size:12px;color:var(--muted)}.metric strong{display:block;font-size:25px;margin-top:4px}
+.tablewrap{overflow:auto;max-height:68vh;border:1px solid var(--line);border-radius:10px;background:#fff}
+table{border-collapse:separate;border-spacing:0;white-space:nowrap;font-size:12px;width:max-content;min-width:100%}
+th,td{border-right:1px solid var(--line);border-bottom:1px solid var(--line);text-align:center;padding:0}
+thead th{position:sticky;top:0;background:#edf1ee;z-index:3;height:34px;min-width:42px}
+th:first-child,td:first-child{position:sticky;left:0;z-index:2;background:#f3f6f3;text-align:left;min-width:64px;padding:6px 8px}
+th:nth-child(2),td:nth-child(2){position:sticky;left:64px;z-index:2;background:#f3f6f3;text-align:left;min-width:110px;padding:6px 8px}
+thead th:first-child,thead th:nth-child(2){z-index:4;background:#e5ebe6}
+td.status{min-width:42px;height:39px}
+td.status select{width:100%;min-width:42px;height:39px;border:0;border-radius:0;padding:0;text-align:center;font-weight:800;font-size:12px;appearance:none;background:transparent}
+td.status:has(option[value="L"]:checked){background:var(--green2)}
+td.status:has(option[value="LS"]:checked){background:var(--orange)}
+td.status:has(option[value="X"]:checked){background:#e9edf0}
+td.status select:focus{outline:2px solid #397b65;outline-offset:-2px}
+tfoot td{padding:7px;background:#f4f6f4;font-weight:700}
+.small{font-size:12px;color:var(--muted)}
+details summary{cursor:pointer;font-weight:700}
+
+.room-map{display:grid;grid-template-columns:repeat(auto-fit,minmax(145px,1fr));gap:10px;margin-top:12px}
+.room-tile{border:1px solid var(--line);border-radius:12px;background:#fff;overflow:hidden}
+.room-tile-head{background:#edf1ee;padding:9px 11px;font-weight:800;display:flex;justify-content:space-between;align-items:center}
+.room-kind{font-size:11px;color:var(--muted);font-weight:650}
+.room-beds{padding:9px;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px}
+.bed-chip{background:var(--green2);border:1px solid #c7ddd2;border-radius:8px;padding:8px 5px;text-align:center;font-size:12px;font-weight:700}
+.bed-chip.single{background:var(--orange);border-color:#f0ddc2}
+.bed-chip.extra{background:#e9edf0;border-color:#d7ded9}
+.map-key{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+@media(max-width:700px){.room-map{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}.room-beds{gap:5px}.bed-chip{font-size:11px;padding:7px 3px}}
+
+@media(max-width:700px){main{padding:10px}.cards{grid-template-columns:repeat(2,minmax(0,1fr))}.panel{padding:11px}.tablewrap{max-height:62vh}button{padding:10px 12px}.toolbar>*{flex:1 1 135px}}
+@page{size:A4 landscape;margin:10mm}
+@media print{
+  :root{--line:#cbd5cf;--ink:#17211d;--green:#173f35;--green2:#dcebe4;--orange:#fff0dc}
+  body{background:#fff!important;color:#17211d;font-size:10px;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  header{background:#173f35!important;color:#fff!important;padding:12px 14px;margin-bottom:8px;print-color-adjust:exact}
+  header h1{font-size:20px;margin:0 0 3px}header p{color:#e1eee8!important;font-size:10px}
+  main{padding:0;max-width:none}
+  .panel{box-shadow:none;border:0;border-radius:0;padding:5px 0;margin:0 0 8px;break-inside:avoid}
+  body>*{visibility:visible}
+  body>header,body>main{display:block}
+  main>.panel:not(.print-panel):not(.pdf-summary){display:none!important}
+  main>.print-panel{display:block!important}
+  .pdf-summary{display:block!important;break-before:page}
+  .pdf-summary .cards{grid-template-columns:repeat(4,1fr);gap:6px}
+  .pdf-summary .metric{padding:7px;border-radius:6px;background:#f2f5f2!important}
+  .pdf-summary .metric strong{font-size:16px;margin-top:1px}
+  .pdf-summary .metric .label{font-size:9px}
+  .pdf-summary .hint{font-size:9px}
+  .tablewrap{max-height:none!important;overflow:visible!important;border:0!important;border-radius:0!important}
+  table{font-size:7.2px;width:100%;min-width:0!important;white-space:normal;border-collapse:collapse;table-layout:auto}
+  th,td{border:1px solid #cbd5cf!important;min-width:0!important;padding:2px 3px!important;height:auto!important}
+  thead th{position:static!important;background:#e8eee9!important;color:#17211d;font-size:7px;height:auto!important}
+  th:first-child,td:first-child,th:nth-child(2),td:nth-child(2){position:static!important;background:#f3f6f3!important;text-align:left;min-width:0!important;padding:3px!important}
+  td.status select{display:none!important}
+  td.status:after{content:attr(data-print);font-weight:800;display:block;min-height:10px}
+  td.status:has(option[value="L"]:checked){background:#dcebe4!important}
+  td.status:has(option[value="LS"]:checked){background:#fff0dc!important}
+  td.status:has(option[value="X"]:checked){background:#e9edf0!important}
+  .no-print,.toolbar,.hint.no-print{display:none!important}
+  #daily{font-size:9px}
+  #daily th,#daily td{padding:4px 6px!important}
+  h2{font-size:14px!important;margin:0 0 5px!important}
+  .print-title{display:block!important;font-size:14px!important;margin:0 0 5px!important}
+  .pdf-meta{display:block!important;font-size:9px;color:#52635a;margin:0 0 6px}
+  tr{break-inside:avoid}
+}
+.pdf-meta{display:none}.print-title{display:none}
+
+.day-field{margin:12px 0;max-width:260px;font-size:14px;font-weight:700}.day-field select{font-size:17px;min-height:48px;width:100%;background:#f7faf8}.day-entry-list{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}.entry-room-title{grid-column:1/-1;margin:14px 0 0;padding:8px 10px;background:#edf1ee;border-radius:8px;font-size:15px}.entry-row{border:1px solid var(--line);border-radius:10px;padding:10px;display:grid;grid-template-columns:minmax(90px,1fr) minmax(120px,1fr) minmax(145px,1.2fr);gap:8px;align-items:center;min-width:0}.entry-bed{font-weight:750;font-size:14px;min-width:0}.entry-bed small{display:block;color:var(--muted);font-size:11px;font-weight:500}.entry-status,.entry-cleaner{display:flex;flex-direction:column;gap:3px;min-width:0;color:var(--muted);font-size:11px}.entry-status select,.entry-cleaner select{width:100%;min-height:42px;font-weight:750;font-size:13px;padding:7px;background:#fff}.print-panel{scroll-margin-top:10px}
+@media(max-width:700px){.day-entry-list{grid-template-columns:1fr}.entry-row{padding:9px 10px}.entry-status{min-width:145px}.day-field{max-width:none}}
+
+
+/* v5: fluxo diário mais evidente e proteção contra limpeza acidental */
+#dailyEntryPanel{border:2px solid #b7d6c8;background:#fbfdfb;scroll-margin-top:12px}
+#dailyEntryPanel h2{font-size:21px!important}
+#entryDay{min-height:52px;font-size:18px;font-weight:750;border:2px solid #8fb9a5}
+.day-entry-list{grid-template-columns:1fr!important;gap:8px}
+.entry-room{border:1px solid var(--line);border-radius:11px;overflow:hidden;background:#fff}
+.entry-room>summary{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:14px;background:#edf4ef;font-size:16px;font-weight:800;cursor:pointer;list-style:none}
+.entry-room>summary::-webkit-details-marker{display:none}
+.entry-room>summary:after{content:'＋';font-size:20px;color:var(--green)}
+.entry-room[open]>summary:after{content:'−'}
+.entry-room>summary small{font-size:12px;font-weight:650;color:var(--muted);text-align:right}
+.entry-room-content{padding:8px;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.maintenance-panel{margin-top:26px;border:1px dashed #d99b96;background:#fffafa}
+.maintenance-panel summary{color:#8b2520;padding:8px 0}
+button.danger{background:#fff0ef;border:1px solid #d99b96;color:#8b2520;margin:8px 0 2px}
+@media(max-width:700px){.entry-room-content{grid-template-columns:1fr}.entry-row{grid-template-columns:minmax(75px,.8fr) minmax(115px,1fr);}.entry-cleaner{grid-column:1/-1}.entry-room>summary{padding:13px}.entry-room>summary small{max-width:45%}}
+
+</style>
+</head>
+<body>
+<header>
+  <h1>Rotatividade do Hostel</h1>
+  <p>Controle mensal de limpeza e troca de enxoval • funciona localmente no navegador</p>
+</header>
+<main>
+  <section class="panel no-print">
+    <div class="toolbar">
+      <label class="field">Unidade
+        <select id="unit"><option value="SR">SR</option><option value="MK">MK</option></select>
+      </label>
+      <label class="field">Mês
+        <input id="month" type="month" value="2026-11">
+      </label>
+      <label class="field">Nome do responsável (opcional)
+        <input id="responsible" type="text" placeholder="Quem está preenchendo">
+      </label>
+      <button class="primary" id="saveBtn">Salvar neste dispositivo</button>
+    </div>
+    <div class="legend">
+      <span class="tag blank">Em branco = pendente / sem marcação</span>
+      <span class="tag l">L = limpo / troca realizada</span>
+      <span class="tag ls">LS = limpeza simples / troca realizada</span>
+      <span class="tag x">X = não limpar / sem troca</span>
+    </div>
+    <p class="hint">Toque em cada quadradinho e escolha a marcação. L e LS entram na contagem de trocas; X e em branco não entram. Os dados são separados por unidade e mês. Use o backup JSON para transferir lançamentos entre dispositivos.</p>
+  </section>
+
+
+
+  <section class="panel no-print" id="dailyEntryPanel">
+    <h2 style="font-size:19px;margin:0 0 6px">Lançamento por dia</h2>
+    <p class="hint" style="margin-top:0">1. Escolha o dia. 2. Toque no quarto para abrir as camas. 3. Selecione L, LS, X ou Em branco. O registro é salvo automaticamente e aparece na grade mensal.</p>
+    <label class="field day-field">Dia do mês
+      <select id="entryDay" aria-label="Escolha o dia do mês"></select>
+    </label>
+    <div id="dayEntryList" class="day-entry-list"></div>
+    <p class="hint">As marcações são salvas automaticamente neste navegador. L e LS contam como troca; X e em branco não contam.</p>
+  </section>
+
+  <section class="panel print-panel">
+    <div class="toolbar no-print" style="justify-content:space-between;align-items:center;margin-bottom:10px">
+      <div><strong id="gridTitle">Grade mensal</strong><div class="small">Unidade, quarto, cama e dias do mês. SR é a unidade principal; MK funciona separadamente.</div></div>
+      <div class="actions">
+        <button class="soft" id="csvBtn">Exportar CSV (Excel)</button>
+        <button class="soft" id="jsonBtn">Backup JSON</button>
+        <button class="soft" id="importBtn">Importar JSON</button>
+        <button class="primary" id="printBtn">Exportar PDF</button>
+        <input id="jsonFile" type="file" accept=".json,application/json" hidden>
+      </div>
+    </div>
+    <h2 id="printTitle" class="print-title">Rotatividade do Hostel</h2>
+    <div class="tablewrap"><table id="grid"></table></div>
+    <p class="hint no-print">Na unidade SR, outubro de 2026 foi pré-preenchido por leitura visual da foto enviada. Revise marcações rabiscadas ou pouco nítidas antes de usar os totais. Para gerar o relatório em PDF, use o botão “Exportar PDF”. A exportação CSV abre no Excel; o backup JSON guarda os lançamentos para continuar em outro dispositivo.</p>
+  </section>
+
+
+  <section class="panel no-print" id="visualRoomMap">
+    <h2 style="font-size:17px;margin:0 0 4px">Mapa visual dos quartos e camas</h2>
+    <p class="hint" style="margin-top:0">Cada cartão representa um quarto; cada etiqueta representa uma cama que tem sua própria linha na grade mensal.</p>
+    <div class="room-map">
+      <div class="room-tile"><div class="room-tile-head"><span>Quarto 1</span><span class="room-kind">Casal</span></div><div class="room-beds"><div class="bed-chip">Cama de casal</div></div></div>
+      <div class="room-tile"><div class="room-tile-head"><span>Quarto 2</span><span class="room-kind">Casal</span></div><div class="room-beds"><div class="bed-chip">Cama de casal</div></div></div>
+      <div class="room-tile"><div class="room-tile-head"><span>Quarto 3</span><span class="room-kind">Casal</span></div><div class="room-beds"><div class="bed-chip">Cama de casal</div></div></div>
+      <div class="room-tile"><div class="room-tile-head"><span>Quarto 4</span><span class="room-kind">Casal</span></div><div class="room-beds"><div class="bed-chip">Cama de casal</div></div></div>
+      <div class="room-tile"><div class="room-tile-head"><span>Quarto 5</span><span class="room-kind">Casal</span></div><div class="room-beds"><div class="bed-chip">Cama de casal</div></div></div>
+      <div class="room-tile"><div class="room-tile-head"><span>Quarto 6</span><span class="room-kind">Solteiro</span></div><div class="room-beds"><div class="bed-chip single">Cama de solteiro</div></div></div>
+      <div class="room-tile"><div class="room-tile-head"><span>Quarto 7</span><span class="room-kind">Compartilhado</span></div><div class="room-beds"><div class="bed-chip single">Cama 1</div><div class="bed-chip single">Cama 2</div><div class="bed-chip single">Cama 3</div><div class="bed-chip single">Cama 4</div></div></div>
+      <div class="room-tile"><div class="room-tile-head"><span>Quarto 8</span><span class="room-kind">Compartilhado</span></div><div class="room-beds"><div class="bed-chip single">Cama 1</div><div class="bed-chip single">Cama 2</div><div class="bed-chip single">Cama 3</div><div class="bed-chip single">Cama 4</div></div></div>
+      <div class="room-tile"><div class="room-tile-head"><span>Quarto 9</span><span class="room-kind">Casal + extra</span></div><div class="room-beds"><div class="bed-chip">Cama de casal</div><div class="bed-chip extra">Extra solteiro</div></div></div>
+      <div class="room-tile"><div class="room-tile-head"><span>Quarto 10</span><span class="room-kind">Casal</span></div><div class="room-beds"><div class="bed-chip">Cama de casal</div></div></div>
+      <div class="room-tile"><div class="room-tile-head"><span>Quarto 11</span><span class="room-kind">Casal</span></div><div class="room-beds"><div class="bed-chip">Cama de casal</div></div></div>
+      <div class="room-tile"><div class="room-tile-head"><span>Quarto 12</span><span class="room-kind">Casal</span></div><div class="room-beds"><div class="bed-chip">Cama de casal</div></div></div>
+      <div class="room-tile"><div class="room-tile-head"><span>Quarto 13</span><span class="room-kind">Casal</span></div><div class="room-beds"><div class="bed-chip">Cama de casal</div></div></div>
+      <div class="room-tile"><div class="room-tile-head"><span>Quarto 14</span><span class="room-kind">Casal</span></div><div class="room-beds"><div class="bed-chip">Cama de casal</div></div></div>
+      <div class="room-tile"><div class="room-tile-head"><span>Quarto 15</span><span class="room-kind">Casal</span></div><div class="room-beds"><div class="bed-chip">Cama de casal</div></div></div>
+      <div class="room-tile"><div class="room-tile-head"><span>Quarto 16</span><span class="room-kind">Casal</span></div><div class="room-beds"><div class="bed-chip">Cama de casal</div></div></div>
+      <div class="room-tile"><div class="room-tile-head"><span>Quarto 17</span><span class="room-kind">Solteiro</span></div><div class="room-beds"><div class="bed-chip single">Cama de solteiro</div></div></div>
+    </div>
+    <div class="map-key"><span class="tag l">Verde: cama de casal</span><span class="tag ls">Laranja: cama de solteiro</span><span class="tag x">Cinza: cama extra</span></div>
+  </section>
+
+  <section class="panel no-print" id="roomInventory">
+    <h2 style="font-size:17px;margin:0 0 10px">Quartos e camas cadastrados</h2>
+    <div class="cards" style="grid-template-columns:repeat(auto-fit,minmax(175px,1fr))">
+      <div class="metric"><span class="label">Quartos 1–5</span><strong style="font-size:18px">1 cama de casal</strong><span class="small">em cada quarto</span></div>
+      <div class="metric"><span class="label">Quarto 9</span><strong style="font-size:18px">1 casal + 1 solteiro</strong><span class="small">cama extra</span></div>
+      <div class="metric"><span class="label">Quartos 10–16</span><strong style="font-size:18px">1 cama de casal</strong><span class="small">em cada quarto</span></div>
+      <div class="metric"><span class="label">Quartos 6 e 17</span><strong style="font-size:18px">1 cama de solteiro</strong><span class="small">em cada quarto</span></div>
+      <div class="metric"><span class="label">Quarto 7</span><strong style="font-size:18px">4 camas de solteiro</strong><span class="small">cada cama tem sua própria linha</span></div>
+      <div class="metric"><span class="label">Quarto 8</span><strong style="font-size:18px">4 camas de solteiro</strong><span class="small">cada cama tem sua própria linha</span></div>
+    </div>
+    <p class="hint">Total cadastrado: 13 camas de casal e 11 camas de solteiro, incluindo a cama extra do quarto 9. Na grade abaixo, cada cama aparece em uma linha e cada dia em uma coluna.</p>
+  </section>
+
+
+  <section class="panel pdf-summary">
+    <div class="pdf-meta">Relatório mensal de rotatividade do enxoval</div>
+    <div class="cards">
+      <div class="metric"><span class="label">Trocas registradas no mês</span><strong id="mTotal">0</strong></div>
+      <div class="metric"><span class="label">Trocas de cama de casal</span><strong id="mCouple">0</strong></div>
+      <div class="metric"><span class="label">Trocas de cama de solteiro</span><strong id="mSingle">0</strong></div>
+      <div class="metric"><span class="label">Dia com mais trocas</span><strong id="mPeak">—</strong></div>
+    </div>
+    <p class="hint" id="summaryNote">A contagem considera L e LS como trocas realizadas.</p>
+  </section>
+
+  <section class="panel pdf-summary">
+    <h2 style="font-size:17px;margin:0 0 10px">Resumo por dia</h2>
+    <div class="tablewrap" style="max-height:320px"><table id="daily"></table></div>
+    <p class="hint">“Enxoval de casal” significa uma troca registrada numa cama de casal. “Cama de solteiro” conta camas individuais trocadas; quartos compartilhados não são multiplicados como se cada cama usasse o conjunto completo de 17 peças.</p>
+  </section>
+
+  <section class="panel no-print maintenance-panel">
+    <details>
+      <summary>⚠️ Área de manutenção e ações permanentes</summary>
+      <p class="hint">Atenção: limpar o mês apaga as marcações da unidade e do mês atualmente selecionados neste navegador. Faça um backup JSON antes.</p>
+      <button class="danger" id="clearMonth">Limpar todos os lançamentos deste mês</button>
+    </details>
+  </section>
+
+  <section class="panel no-print">
+    <details>
+      <summary>Como usar no GitHub Pages e entre celular e notebook</summary>
+      <p class="hint">Esta versão pode ser publicada como index.html no GitHub Pages. A hospedagem entrega a página, mas não sincroniza os lançamentos: cada navegador guarda sua própria cópia local. Os dados de SR e MK são separados. Para passar os lançamentos do celular para o notebook (ou vice-versa), toque em “Backup JSON” num dispositivo e depois em “Importar JSON” no outro. Se duas pessoas editarem cópias diferentes, será preciso escolher qual arquivo importar; não existe sincronização automática entre dispositivos sem um serviço compartilhado.</p>
+      <p class="hint">No iPhone, o comportamento de armazenamento de arquivos HTML locais pode variar conforme o app usado para abri-los. Faça backups JSON regulares, especialmente antes de limpar dados do navegador.</p>
+    </details>
+  </section>
+</main>
+<footer style="max-width:1100px;margin:18px auto 0;padding:18px 20px 24px;text-align:center;color:#5f6f66;font-size:13px;line-height:1.5;border-top:1px solid #d5dfd9;">
+  <strong style="color:#173f35;">Rotatividade do Hostel</strong><br>
+  Desenvolvido por <strong>Thiago Fonseca</strong><br>
+  <span>Concepção, desenvolvimento e aprimoramento do sistema.</span>
+</footer>
+<script>
+// Rotatividade do Hostel: lógica principal separada para facilitar manutenção.
+(function(){
+const $=id=>document.getElementById(id);
+const beds=[
+ {room:"1",bed:"Casal",type:"casal"},{room:"2",bed:"Casal",type:"casal"},{room:"3",bed:"Casal",type:"casal"},
+ {room:"4",bed:"Casal",type:"casal"},{room:"5",bed:"Casal",type:"casal"},
+ {room:"9",bed:"Casal",type:"casal"},{room:"9",bed:"Extra solteiro",type:"solteiro"},
+ {room:"10",bed:"Casal",type:"casal"},{room:"11",bed:"Casal",type:"casal"},{room:"12",bed:"Casal",type:"casal"},
+ {room:"13",bed:"Casal",type:"casal"},{room:"14",bed:"Casal",type:"casal"},{room:"15",bed:"Casal",type:"casal"},
+ {room:"16",bed:"Casal",type:"casal"},{room:"6",bed:"Solteiro",type:"solteiro"},
+ {room:"17",bed:"Solteiro",type:"solteiro"},
+ {room:"7",bed:"Solteiro 1",type:"solteiro"},{room:"7",bed:"Solteiro 2",type:"solteiro"},{room:"7",bed:"Solteiro 3",type:"solteiro"},{room:"7",bed:"Solteiro 4",type:"solteiro"},
+ {room:"8",bed:"Solteiro 1",type:"solteiro"},{room:"8",bed:"Solteiro 2",type:"solteiro"},{room:"8",bed:"Solteiro 3",type:"solteiro"},{room:"8",bed:"Solteiro 4",type:"solteiro"}
+];
+
+const octoberSeedRows = [["L","L","L","X","L","X","LS","L","L","L","L","L","L","X","X","L","X","L"],["L","L","X","L","X","X","L","L","L","X","L","L","L","X","L","L","X","L"],["L","X","L","L","L","X","LS","L","L","L","L","X","L","X","L","L","L","L"],["X","LS","X","X","L","X","L","X","L","X","X","L","X","X","X","L","X","X"],["L","L","X","L","L","X","L","X","L","L","L","L","L","L","L","L","L","L"],["X","L","X","X","X","L","X","X","L","X","X","X","X","X","X","L","X","X"],["X","L","L","L","X","X","L","X","L","X","L","X","X","X","L","X","X","L"],["L","X","L","LS","L","X","L","L","X","L","X","L","X","L","X","L","X","X"],["L","X","L","LS","X","X","X","L","X","L","X","L","X","L","X","L","X","X"],["L","X","L","X","X","X","X","L","X","L","X","X","X","L","X","L","X","X"],["L","X","L","X","X","X","X","X","X","L","X","X","X","L","X","X","X","X"],["X","X","L","X","LS","X","L","X","L","X","L","L","L","X","LS","L","X","L"],["X","X","L","X","X","X","L","X","L","X","L","L","L","X","LS","L","X","X"],["X","X","X","X","L","X","L","X","X","L","X","X","L","X","LS","X","X","X"],["L","L","L","L","L","X","L","X","L","X","L","L","LS","L","X","X","L","L"],["X","X","X","X","X","X","L","X","X","X","X","X","L","X","LS","X","X","X"],["X","X","X","X","L","X","L","X","X","X","L","X","LS","L","X","X","X","X"],["X","L","L","L","X","LS","L","L","X","X","X","L","L","X","LS","L","L","L"],["X","L","L","L","L","X","L","L","L","L","X","L","L","X","LS","L","X","X"],["X","L","L","L","L","X","L","L","L","X","L","L","L","X","L","X","L","L"],["LS","L","L","L","L","L","L","L","L","L","L","L","L","L","L","X","L","L"],["X","L","L","X","L","L","L","L","L","X","L","X","L","L","L","L","L","L"],["L","L","L","X","X","X","L","X","L","X","X","L","L","X","LS","L","X","X"],["X","L","X","X","X","X","X","L","L","L","X","X","X","X","X","L","X","X"]];
+
+let data={};
+const key=()=>`hostel-rotatividade-${$('unit').value}-${$('month').value}`;
+function blankMonth(){return {responsible:"",cells:{},cleaners:{}}}
+function load(){
+ try {
+   const saved=localStorage.getItem(key());
+   if(saved) data=JSON.parse(saved);
+   else data=blankMonth();
+   // Limpa uma única vez os registros indevidos de SR/novembro de 2026.
+   // Depois da primeira abertura, os novos lançamentos são preservados normalmente.
+   const novemberFixKey="hostel-rotatividade-fix-SR-2026-11-v1";
+   if($('unit').value==="SR" && $('month').value==="2026-11" && localStorage.getItem(novemberFixKey)!=="done"){
+     data=blankMonth();
+     localStorage.setItem(key(),JSON.stringify(data));
+     localStorage.setItem(novemberFixKey,"done");
+   }
+   if($('unit').value==="SR" && $('month').value==="2026-10" && (!data.cells || Object.keys(data.cells).length===0)){
+     data=blankMonth();
+     octoberSeedRows.forEach((row,i)=>row.forEach((v,j)=>{if(v)data.cells[`${i}|${j+1}`]=v}));
+     data.prefilledFromPhoto=true;
+     localStorage.setItem(key(),JSON.stringify(data));
+   }
+ } catch(e){data=blankMonth()}
+ $('responsible').value=data.responsible||"";
+ render()
+}
+function persist(show){data.responsible=$('responsible').value;try{localStorage.setItem(key(),JSON.stringify(data));if(show)alert("Salvo neste dispositivo.")}catch(e){if(show)alert("Não foi possível salvar automaticamente neste navegador. Faça um Backup JSON.")}}
+function days(){const [y,m]=$('month').value.split('-').map(Number);return new Date(y,m,0).getDate()}
+function status(row,d){return data.cells[`${row}|${d}`]||""}
+function setStatus(row,d,v){if(v)data.cells[`${row}|${d}`]=v;else delete data.cells[`${row}|${d}`];persist(false);updateMetrics();updateDaily();updateDayEntry()}
+function cleaner(row,d){return (data.cleaners&&data.cleaners[`${row}|${d}`])||""}
+function setCleaner(row,d,v){if(!data.cleaners)data.cleaners={};if(v)data.cleaners[`${row}|${d}`]=v;else delete data.cleaners[`${row}|${d}`];persist(false)}
+function changed(v){return v==="L"||v==="LS"}
+function render(){
+ const n=days();populateEntryDays();$('gridTitle').textContent=`Unidade ${$('unit').value} • Grade de ${$('month').value}`;const [py,pm]=$('month').value.split('-').map(Number);$('printTitle').textContent=`Rotatividade do Hostel • Unidade ${$('unit').value} • ${new Date(py,pm-1,1).toLocaleDateString('pt-BR',{month:'long',year:'numeric'})}`;
+ let html='<thead><tr><th>Quarto</th><th>Cama</th>';
+ for(let d=1;d<=n;d++)html+=`<th>${d}</th>`;
+ html+='</tr></thead><tbody>';
+ beds.forEach((b,i)=>{html+=`<tr><td>${b.room}</td><td>${b.bed}</td>`;
+ for(let d=1;d<=n;d++){const v=status(i,d);html+=`<td class="status" data-print="${v||'·'}"><select aria-label="Quarto ${b.room}, ${b.bed}, dia ${d}" data-row="${i}" data-day="${d}">
+ <option value="" ${v===""?"selected":""}>·</option><option value="L" ${v==="L"?"selected":""}>L</option><option value="LS" ${v==="LS"?"selected":""}>LS</option><option value="X" ${v==="X"?"selected":""}>X</option></select></td>`}
+ html+='</tr>'});
+ html+='</tbody>';
+ $('grid').innerHTML=html;
+ $('grid').querySelectorAll('select').forEach(sel=>sel.addEventListener('change',e=>{const s=e.target;setStatus(+s.dataset.row,+s.dataset.day,s.value);s.closest('td').dataset.print=s.value||'·';updateAll()}));
+ updateAll();updateDayEntry();
+}
+function populateEntryDays(){const sel=$('entryDay');const n=days();const old=Number(sel.value)||1;sel.innerHTML=Array.from({length:n},(_,i)=>`<option value="${i+1}">Dia ${String(i+1).padStart(2,'0')}</option>`).join('');sel.value=String(Math.min(old,n));}
+function updateDayEntry(){
+ const holder=$('dayEntryList');if(!holder)return;
+ const d=Number($('entryDay').value)||1;
+ const rooms=[];
+ beds.forEach((b,i)=>{let r=rooms.find(x=>x.room===b.room);if(!r){r={room:b.room,beds:[]};rooms.push(r)}r.beds.push({b,i})});
+ let h='';
+ rooms.forEach(r=>{
+   const marked=r.beds.filter(x=>status(x.i,d)!=='').length;
+   h+=`<details class="entry-room"><summary><span>Quarto ${r.room}</span><small>${marked}/${r.beds.length} camas marcadas</small></summary><div class="entry-room-content">`;
+   r.beds.forEach(({b,i})=>{const v=status(i,d);const who=cleaner(i,d);h+=`<div class="entry-row"><span class="entry-bed">${b.bed}<small>${b.type==='casal'?'Cama de casal':'Cama de solteiro'}</small></span><label class="entry-status"><span>Marcação</span><select aria-label="Quarto ${b.room}, ${b.bed}, dia ${d}" data-entry-row="${i}" data-entry-day="${d}"><option value="" ${v===''?'selected':''}>Em branco</option><option value="L" ${v==='L'?'selected':''}>L · troca realizada</option><option value="LS" ${v==='LS'?'selected':''}>LS · troca realizada</option><option value="X" ${v==='X'?'selected':''}>X · sem troca</option></select></label><label class="entry-cleaner"><span>Limpeza feita por:</span><select aria-label="Limpeza feita por, quarto ${b.room}, ${b.bed}, dia ${d}" data-cleaner-row="${i}" data-cleaner-day="${d}"><option value="" ${who===''?'selected':''}>Selecione...</option><option value="Sheila" ${who==='Sheila'?'selected':''}>Sheila</option><option value="Mônica" ${who==='Mônica'?'selected':''}>Mônica</option><option value="Dayane" ${who==='Dayane'?'selected':''}>Dayane</option><option value="Não informado" ${who==='Não informado'?'selected':''}>Não informado</option></select></label></div>`});
+   h+='</div></details>';
+ });
+ holder.innerHTML=h;
+ holder.querySelectorAll('select[data-entry-row]').forEach(sel=>sel.addEventListener('change',e=>{const el=e.target;setStatus(Number(el.dataset.entryRow),Number(el.dataset.entryDay),el.value);const gridSel=$('grid').querySelector(`select[data-row="${el.dataset.entryRow}"][data-day="${el.dataset.entryDay}"]`);if(gridSel){gridSel.value=el.value;gridSel.closest('td').dataset.print=el.value||'·';}const details=el.closest('details.entry-room');if(details){const selects=details.querySelectorAll('select[data-entry-row]');const marked=[...selects].filter(s=>s.value!=='').length;details.querySelector('summary small').textContent=`${marked}/${selects.length} camas marcadas`;} }));
+ holder.querySelectorAll('select[data-cleaner-row]').forEach(sel=>sel.addEventListener('change',e=>{const el=e.target;setCleaner(Number(el.dataset.cleanerRow),Number(el.dataset.cleanerDay),el.value)}));
+}
+function totalsForDay(d){
+ let couple=0,single=0,ls=0,l=0,pending=0;
+ beds.forEach((b,i)=>{let v=status(i,d);if(changed(v)){if(b.type==="casal")couple++;else single++;if(v==="LS")ls++;else l++}else if(v==="")pending++});
+ return {couple,single,total:couple+single,ls,l,pending}
+}
+function updateMetrics(){
+ let total=0,c=0,s=0,peak=0,peakDay="—";
+ for(let d=1;d<=days();d++){const t=totalsForDay(d);total+=t.total;c+=t.couple;s+=t.single;if(t.total>peak){peak=t.total;peakDay=String(d).padStart(2,"0")}}
+ $('mTotal').textContent=total;$('mCouple').textContent=c;$('mSingle').textContent=s;$('mPeak').textContent=peak?`${peak} (dia ${peakDay})`:"—";
+ $('summaryNote').textContent=`Total de marcações L/LS no mês: ${total}. Média por dia do mês: ${(total/days()).toFixed(1).replace(".",",")}.`;
+}
+function updateDaily(){
+ let h='<thead><tr><th>Dia</th><th>Casal</th><th>Solteiro</th><th>Total trocas</th><th>L</th><th>LS</th><th>Em branco</th></tr></thead><tbody>';
+ for(let d=1;d<=days();d++){const t=totalsForDay(d);h+=`<tr><td>${String(d).padStart(2,"0")}</td><td>${t.couple}</td><td>${t.single}</td><td><b>${t.total}</b></td><td>${t.l}</td><td>${t.ls}</td><td>${t.pending}</td></tr>`}
+ h+='</tbody>';$('daily').innerHTML=h;
+}
+function updateAll(){updateMetrics();updateDaily()}
+function download(name,content,type){const blob=new Blob([content],{type});const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download=name;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),1200)}
+function csv(){
+ const n=days();let rows=[["Quarto","Cama",...Array.from({length:n},(_,i)=>String(i+1))]];
+ beds.forEach((b,i)=>rows.push([b.room,b.bed,...Array.from({length:n},(_,j)=>status(i,j+1))]));
+ rows.push([]);rows.push(["Responsável pela limpeza"]);rows.push(["Quarto","Cama",...Array.from({length:n},(_,i)=>String(i+1))]);
+ beds.forEach((b,i)=>rows.push([b.room,b.bed,...Array.from({length:n},(_,j)=>cleaner(i,j+1))]));
+ rows.push([]);rows.push(["Resumo diário"]);rows.push(["Dia","Trocas casal","Trocas solteiro","Total","L","LS","Em branco"]);
+ for(let d=1;d<=n;d++){const t=totalsForDay(d);rows.push([d,t.couple,t.single,t.total,t.l,t.ls,t.pending])}
+ const text=rows.map(r=>r.map(x=>`"${String(x??"").replace(/"/g,'""')}"`).join(";")).join("\r\n");
+ download(`rotatividade_hostel_${$('unit').value}_${$('month').value}.csv`,"\ufeff"+text,"text/csv;charset=utf-8");
+}
+function jsonBackup(){
+ data.responsible=$('responsible').value;
+ // Salva o mês atual antes de coletar o histórico completo.
+ localStorage.setItem(key(),JSON.stringify(data));
+ const records={};
+ const monthKeyPattern=/^hostel-rotatividade-(SR|MK)-\d{4}-\d{2}$/;
+ for(let i=0;i<localStorage.length;i++){
+   const storageKey=localStorage.key(i);
+   if(storageKey && monthKeyPattern.test(storageKey)) records[storageKey]=localStorage.getItem(storageKey);
+ }
+ const backup={app:"Rotatividade do Hostel",version:3,backupType:"complete",createdAt:new Date().toISOString(),selectedUnit:$('unit').value,selectedMonth:$('month').value,records};
+ download(`backup_completo_rotatividade_hostel_${new Date().toISOString().slice(0,10)}.json`,JSON.stringify(backup,null,2),"application/json");
+}
+$('month').addEventListener('change',load);
+$('entryDay').addEventListener('change',updateDayEntry);
+$('unit').addEventListener('change',load);
+$('responsible').addEventListener('change',()=>persist(false));
+$('saveBtn').addEventListener('click',()=>persist(true));
+$('clearMonth').addEventListener('click',()=>{if(confirm("ATENÇÃO: apagar todas as marcações da unidade e do mês selecionados neste dispositivo? Esta ação não pode ser desfeita. Faça backup JSON antes.")){data=blankMonth();persist(false);render()}});
+$('csvBtn').addEventListener('click',csv);
+$('jsonBtn').addEventListener('click',jsonBackup);
+$('importBtn').addEventListener('click',()=>$('jsonFile').click());
+$('jsonFile').addEventListener('change',async e=>{
+ const f=e.target.files[0];if(!f)return;
+ try{
+   const obj=JSON.parse(await f.text());
+   if(obj.app!=="Rotatividade do Hostel")throw new Error("Aplicativo inválido");
+   if(obj.backupType==="complete" && obj.records && typeof obj.records==="object"){
+     const validRecords=[];
+     const monthKeyPattern=/^hostel-rotatividade-(SR|MK)-\d{4}-\d{2}$/;
+     for(const [storageKey,raw] of Object.entries(obj.records)){
+       if(!monthKeyPattern.test(storageKey))continue;
+       const parsed=typeof raw==="string"?JSON.parse(raw):raw;
+       if(!parsed || typeof parsed!=="object" || !parsed.cells || typeof parsed.cells!=="object")throw new Error("Registro mensal inválido");
+       validRecords.push([storageKey,JSON.stringify(parsed)]);
+     }
+     if(!validRecords.length)throw new Error("Backup sem meses válidos");
+     if(!confirm("Este backup completo substituirá todos os meses e unidades salvos neste navegador. Deseja continuar?"))return;
+     const currentKeys=[];
+     for(let i=0;i<localStorage.length;i++){const storageKey=localStorage.key(i);if(storageKey && monthKeyPattern.test(storageKey))currentKeys.push(storageKey)}
+     currentKeys.forEach(storageKey=>localStorage.removeItem(storageKey));
+     validRecords.forEach(([storageKey,raw])=>localStorage.setItem(storageKey,raw));
+     // Impede que a limpeza inicial de novembro apague dados restaurados por este backup.
+     localStorage.setItem("hostel-rotatividade-fix-SR-2026-11-v1","done");
+     if(obj.selectedMonth)$('month').value=obj.selectedMonth;
+     if(obj.selectedUnit && ['SR','MK'].includes(obj.selectedUnit))$('unit').value=obj.selectedUnit;
+     load();
+     alert("Backup completo restaurado. Todos os meses e unidades foram recuperados.");
+   }else if(obj.data && obj.month){
+     // Compatibilidade com backups antigos, que continham apenas um mês.
+     $('month').value=obj.month;
+     if(obj.unit && ['SR','MK'].includes(obj.unit))$('unit').value=obj.unit;
+     data=obj.data;persist(false);load();
+     alert("Backup de um mês importado. Os demais meses foram mantidos.");
+   }else throw new Error("Formato inválido");
+ }catch(err){alert("Não foi possível importar: "+(err.message||"arquivo inválido"))}
+ e.target.value="";
+});
+$('printBtn').addEventListener('click',()=>{persist(false);window.print()});
+load();
+})();
+
+</script>
+</body>
+</html>

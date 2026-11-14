@@ -1,0 +1,32 @@
+# Portal do Hostel
+
+Portal único com login e acesso por papel, juntando os apps **Rotatividade (camareira)**, **Lavanderia (Lsr)**, **Reservas (Hostel)** e **Gestão de custos**.
+Os dados ficam na nuvem (Supabase, plano gratuito) e a segurança é feita pelo banco (RLS), não pela tela.
+
+| Papel | Vê |
+|---|---|
+| `admin` | Tudo + tela de usuários |
+| `lavanderia` | Só Lavanderia |
+| `camareira` | Só Rotatividade |
+| `pendente` | Nada (usuário novo, aguardando liberação) |
+
+## Colocar no ar (uma vez só)
+
+1. **Supabase**: crie conta em supabase.com e um projeto novo (região São Paulo, anote a senha do banco).
+2. **Banco**: no projeto, abra *SQL Editor → New query*, cole todo o `supabase/schema.sql` e clique *Run*.
+3. **Fechar cadastro aberto**: *Authentication → Sign In / Providers → Email* → desligue **Allow new users to sign up** (só você cria usuários).
+4. **Seu usuário**: *Authentication → Users → Add user* (seu e-mail + senha, marque *Auto Confirm User*). Depois, no SQL Editor:
+   `update public.profiles set role = 'admin' where email = 'SEU_EMAIL';`
+5. **Chaves**: *Project Settings → API*. Copie a **Project URL** e a chave **anon/public** para o `config.js`. Nunca use a `service_role`.
+6. **Publicar**: *Settings → Pages → Deploy from a branch → main / (root)*. O portal abre na URL mostrada.
+7. **Pessoas novas**: crie em *Authentication → Users → Add user*; depois, no portal, *Usuários e acessos* para escolher o papel.
+
+## Trazer os dados atuais
+
+Cada app antigo tem **Backup JSON**. Abra o app antigo, exporte o backup, abra o módulo equivalente no portal e use **Importar/Restaurar backup**. Ao importar, os dados já vão para a nuvem.
+
+## Observações
+
+- Dois aparelhos editando o mesmo módulo ao mesmo tempo: vale a última gravação. Recarregue ao abrir o módulo para ver o que os outros fizeram.
+- Plano gratuito do Supabase: pausa o projeto após 1 semana sem uso e não faz backup automático. Exporte backups JSON de vez em quando.
+- Os apps antigos (repositórios originais) não foram alterados.

@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>Portal do Hostel</title>
+<link rel="stylesheet" href="portal.css">
+</head>
+<body>
+
+<!-- LOGIN -->
+<main id="viewLogin" class="center hidden">
+  <form id="loginForm" class="card">
+    <h1>Portal do Hostel</h1>
+    <p class="muted">Entre com seu e-mail e senha.</p>
+    <label>E-mail<input id="loginEmail" type="email" autocomplete="username" required></label>
+    <label>Senha<input id="loginPass" type="password" autocomplete="current-password" required></label>
+    <button class="btn" id="loginBtn" type="submit">Entrar</button>
+    <p id="loginMsg" class="msg" role="alert"></p>
+  </form>
+</main>
+
+<!-- MENU -->
+<div id="viewHome" class="hidden">
+  <header class="top">
+    <strong>Portal do Hostel</strong>
+    <span class="spacer"></span>
+    <span id="whoami" class="muted small"></span>
+    <button class="btn ghost" id="btnPass" type="button">Trocar senha</button>
+    <button class="btn ghost" id="btnLogout" type="button">Sair</button>
+  </header>
+  <main class="wrap">
+    <p id="homeMsg" class="msg"></p>
+    <div id="cards" class="grid"></div>
+  </main>
+</div>
+
+<!-- MÓDULO -->
+<div id="viewModule" class="hidden module-view">
+  <header class="top">
+    <button class="btn ghost" id="btnBack" type="button">← Menu</button>
+    <strong id="modTitle"></strong>
+    <span class="spacer"></span>
+    <span id="saveStatus" class="status" aria-live="polite"></span>
+  </header>
+  <iframe id="frame" title="Módulo"></iframe>
+</div>
+
+<!-- ADMIN -->
+<div id="viewAdmin" class="hidden">
+  <header class="top">
+    <button class="btn ghost" id="btnBackAdmin" type="button">← Menu</button>
+    <strong>Usuários e acessos</strong>
+  </header>
+  <main class="wrap">
+    <div class="card wide">
+      <p class="muted">Para criar uma pessoa nova: no painel do Supabase, vá em <b>Authentication → Users → Add user</b> (e-mail + senha, marque “Auto Confirm User”). Ela aparece aqui como <b>pendente</b>; escolha o acesso e salve.</p>
+      <p id="adminMsg" class="msg"></p>
+      <table>
+        <thead><tr><th>Nome</th><th>E-mail</th><th>Acesso</th><th></th></tr></thead>
+        <tbody id="userRows"></tbody>
+      </table>
+    </div>
+  </main>
+</div>
+
+<script src="config.js"></script>
+<script src="vendor/supabase.js"></script>
+<script src="portal.js"></script>
+</body>
+</html>
