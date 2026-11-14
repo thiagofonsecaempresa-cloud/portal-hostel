@@ -1,11 +1,11 @@
 <!doctype html>
 <html lang="pt-BR">
 <head>
-<script src="../../shim.js?v=11"></script>
+<script src="../../shim.js?v=12"></script>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Financeiro do Hostel</title>
-<link rel="stylesheet" href="../../theme.css?v=11">
+<link rel="stylesheet" href="../../theme.css?v=12">
 <style>
   :root{--bg:#f6f1e6;--card:#fff;--ink:#1f2a1a;--muted:#6b7563;--line:#e4dccb;--rec:#4f7a3a;--desp:#c8923a;--saldo:#22381a;--bad:#a5392b;--soft:#f1ecdd}
   *{box-sizing:border-box}
@@ -57,8 +57,13 @@
   .impbar{display:flex;gap:10px;flex-wrap:wrap;align-items:end;margin-bottom:10px}
   .impbar>div{min-width:150px}
   .warnbox{background:#fff7e6;border:1px solid #f0dba8;border-radius:10px;padding:8px 10px;font-size:.85rem;margin:8px 0}
+  /* iOS: campos de data/mês têm largura própria e vazavam sobre o vizinho */
+  .filters>div,.form>div,.impbar>div{min-width:0}
+  input[type=date],input[type=month]{-webkit-appearance:none;appearance:none;display:block;width:100%;max-width:100%;min-width:0;min-height:44px;text-align:left;box-sizing:border-box}
+  input[type=date]::-webkit-date-and-time-value,input[type=month]::-webkit-date-and-time-value{text-align:left;margin:0}
+  select{min-height:44px}
   @media(max-width:700px){
-    .filters{grid-template-columns:1fr 1fr}.kpis{grid-template-columns:1fr}
+    .filters{grid-template-columns:1fr 1fr}.kpis{grid-template-columns:1fr;gap:8px}.kpi{display:flex;justify-content:space-between;align-items:center;padding:10px 14px}.impbar>div{flex:1 1 100%}
     .form{grid-template-columns:1fr 1fr}.form .w2,.form .w3{grid-column:span 2}
   }
 </style>
