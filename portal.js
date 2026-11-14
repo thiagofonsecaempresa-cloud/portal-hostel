@@ -8,13 +8,14 @@
     lavanderia: '<svg viewBox="0 0 24 24"><rect x="4" y="3" width="16" height="18" rx="2.5"/><circle cx="12" cy="13.5" r="4"/><path d="M8 6.5h.01M11 6.5h.01"/></svg>',
     calendario: '<svg viewBox="0 0 24 24"><rect x="3.5" y="5" width="17" height="15" rx="2.5"/><path d="M3.5 10h17M8 3v4M16 3v4"/></svg>',
     custos: '<svg viewBox="0 0 24 24"><path d="M4 20V11M10 20V4M16 20v-6M22 20H2"/></svg>',
+    backup: '<svg viewBox="0 0 24 24"><path d="M12 4v11M7.5 10.5 12 15l4.5-4.5"/><path d="M4 19h16"/></svg>',
     usuarios: '<svg viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.2"/><path d="M3 20c.5-3.5 3-5 6-5s5.5 1.5 6 5"/><path d="M16.5 5.2a3 3 0 0 1 0 5.6M18 15.3c1.8.6 2.9 2.1 3.2 4.7"/></svg>'
   };
   var MODULES = [
-    { id: 'rotatividade', icon: 'cama', name: 'Rotatividade (camareira)', desc: 'Limpeza por cama e por dia.', path: 'modules/rotatividade/index.html', roles: ['admin', 'camareira'] },
-    { id: 'lsr', icon: 'lavanderia', name: 'Lavanderia', desc: 'Produção, inventário, qualidade e rotatividade do enxoval (SR e MK).', path: 'modules/lsr/index.html', roles: ['admin', 'lavanderia'] },
-    { id: 'hostel', icon: 'calendario', name: 'Reservas — Hostel MK', desc: 'Reservas, calendário e mapa de ocupação.', path: 'modules/hostel/index.html', roles: ['admin'] },
-    { id: 'gestao', icon: 'custos', name: 'Gestão de custos', desc: 'Custos fixos e variáveis e custo por quarto.', path: 'modules/gestao/index.html', roles: ['admin'] }
+    { id: 'rotatividade', title: 'Rotatividade do Hostel', icon: 'cama', name: 'Rotatividade (camareira)', desc: 'Limpeza por cama e por dia.', path: 'modules/rotatividade/index.html', roles: ['admin', 'camareira'] },
+    { id: 'lsr', title: 'Lavanderia do Hostel', icon: 'lavanderia', name: 'Lavanderia', desc: 'Produção, inventário, qualidade e rotatividade do enxoval (SR e MK).', path: 'modules/lsr/index.html', roles: ['admin', 'lavanderia'] },
+    { id: 'hostel', title: 'Reservas — Hostel MK', icon: 'calendario', name: 'Reservas — Hostel MK', desc: 'Reservas, calendário e mapa de ocupação.', path: 'modules/hostel/index.html', roles: ['admin'] },
+    { id: 'gestao', title: 'Gestão do Hostel', icon: 'custos', name: 'Gestão de custos', desc: 'Custos fixos e variáveis e custo por quarto.', path: 'modules/gestao/index.html', roles: ['admin'] }
   ];
   var ROLE_LABEL = { admin: 'Acesso geral (admin)', lavanderia: 'Só lavanderia', camareira: 'Só camareira', pendente: 'Pendente (sem acesso)' };
 
@@ -73,10 +74,10 @@
           // só limpa o que não mudou durante o envio
           batch.forEach(function (e) { if (pending.get(e[0]) === e[1]) pending.delete(e[0]); });
           clearTimeout(retry); retry = null;
-          if (pending.size === 0) status('saved', 'Salvo na nuvem ✓');
+          if (pending.size === 0) status('saved', 'Salvo ✓');
           else schedule();
         } catch (err) {
-          status('error', 'Não foi possível salvar — tentando de novo…');
+          status('error', 'Erro ao salvar — tentando…');
           console.error('Erro ao salvar', err);
           clearTimeout(retry);
           retry = setTimeout(flush, 10000);
@@ -97,7 +98,7 @@
         }
         cache = new Map(rows.map(function (x) { return [x.key, x.value]; }));
         pending = new Map(); mod = moduleId;
-        status('saved', 'Dados carregados da nuvem ✓');
+        status('saved', 'Nuvem ✓');
       },
       async close() {
         clearTimeout(timer);
@@ -155,12 +156,16 @@
     var cards = $('cards'); cards.innerHTML = '';
     var list = MODULES.filter(function (m) { return m.roles.indexOf(me.role) >= 0; });
     list.forEach(function (m) { cards.appendChild(tile(m.icon, m.name, m.desc, function () { openModule(m); })); });
-    if (me.role === 'admin') cards.appendChild(tile('usuarios', 'Usuários e acessos', 'Liberar cadastros e definir quem acessa o quê.', openAdmin));
+    if (me.role === 'admin') {
+      cards.appendChild(tile('usuarios', 'Usuários e acessos', 'Liberar cadastros e definir quem acessa o quê.', openAdmin));
+      var last = ''; try { last = localStorage.getItem('portal_ultimo_backup') || ''; } catch (e) {}
+      cards.appendChild(tile('backup', 'Backup geral', last ? 'Baixa tudo de todos os módulos. Último backup: ' + last + '.' : 'Baixa tudo de todos os módulos num só arquivo. Faça de vez em quando.', downloadBackup));
+    }
     setMsg($('homeMsg'), me.role === 'pendente' ? 'Seu acesso ainda não foi liberado. Peça ao administrador.' : '');
     show('viewHome');
     if (me.role === 'admin') {
       sb.from('profiles').select('id', { count: 'exact', head: true }).eq('role', 'pendente').then(function (r) {
-        if (!r.error && r.count > 0) setMsg($('homeMsg'), r.count + (r.count === 1 ? ' pessoa aguarda' : ' pessoas aguardam') + ' liberação em “Usuários e acessos”.', true);
+        if (!r.error && r.count > 0 && !$('homeMsg').textContent) setMsg($('homeMsg'), r.count + (r.count === 1 ? ' pessoa aguarda' : ' pessoas aguardam') + ' liberação em “Usuários e acessos”.', true);
       });
     }
   }
@@ -186,7 +191,8 @@
       return;
     }
     current = m;
-    $('modTitle').textContent = m.name;
+    window.PORTAL_FLAGS = { canImport: me.role === 'admin' && cfg.ALLOW_IMPORT === true };
+    $('modTitle').textContent = m.title || m.name;
     $('frame').src = m.path;
     show('viewModule');
     setMsg($('homeMsg'), '');
@@ -197,6 +203,40 @@
     if (!ok && !confirm('Há alterações que ainda não foram salvas na nuvem. Sair mesmo assim? Elas serão perdidas.')) return;
     $('frame').src = 'about:blank';
     showHome();
+  }
+
+  // =====================================================================
+  // Backup geral (admin): todos os módulos num só arquivo JSON
+  // =====================================================================
+  async function downloadBackup() {
+    setMsg($('homeMsg'), 'Gerando backup…', true);
+    try {
+      var rows = [], from = 0, size = 1000;
+      for (;;) {
+        var r = await sb.from('kv_store').select('module,key,value').order('module').order('key').range(from, from + size - 1);
+        if (r.error) throw r.error;
+        rows = rows.concat(r.data);
+        if (r.data.length < size) break;
+        from += size;
+      }
+      var mods = {};
+      rows.forEach(function (x) { (mods[x.module] = mods[x.module] || {})[x.key] = x.value; });
+      var now = new Date();
+      var out = { sistema: 'Portal São Hostel', tipo: 'backup-geral', versao: 1, exportado_em: now.toISOString(), registros: rows.length, modulos: mods };
+      var blob = new Blob([JSON.stringify(out, null, 2)], { type: 'application/json' });
+      var a = document.createElement('a'), pad = function (n) { return String(n).padStart(2, '0'); };
+      var stamp = now.getFullYear() + '-' + pad(now.getMonth() + 1) + '-' + pad(now.getDate());
+      a.href = URL.createObjectURL(blob); a.download = 'backup-sao-hostel-' + stamp + '.json';
+      document.body.appendChild(a); a.click(); a.remove();
+      setTimeout(function () { URL.revokeObjectURL(a.href); }, 5000);
+      var br = pad(now.getDate()) + '/' + pad(now.getMonth() + 1) + '/' + now.getFullYear();
+      try { localStorage.setItem('portal_ultimo_backup', br); } catch (e) {}
+      showHome();
+      setMsg($('homeMsg'), 'Backup baixado (' + rows.length + ' registros de ' + Object.keys(mods).length + ' módulos). Guarde o arquivo em local seguro.', true);
+    } catch (err) {
+      console.error(err);
+      setMsg($('homeMsg'), 'Não foi possível gerar o backup. Tente de novo.');
+    }
   }
 
   // =====================================================================

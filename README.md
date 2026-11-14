@@ -37,3 +37,9 @@ Cada app antigo tem **Backup JSON**. Abra o app antigo, exporte o backup, abra o
 - Dois aparelhos editando o mesmo módulo ao mesmo tempo: vale a última gravação. Recarregue ao abrir o módulo para ver o que os outros fizeram.
 - Plano gratuito do Supabase: pausa o projeto após 1 semana sem uso e não faz backup automático. Exporte backups JSON de vez em quando.
 - Os apps antigos (repositórios originais) não foram alterados.
+
+## Backup e importação
+
+- **Backup geral** (só admin): tile no menu; baixa um JSON com todos os módulos. Faça de vez em quando — o plano gratuito do Supabase não tem backup automático.
+- **Importar / apagar tudo**: ficam visíveis só para o admin enquanto `ALLOW_IMPORT: true` em `config.js`. Depois da primeira carga, mude para `false` e os botões somem para todos.
+- Os arquivos levam `?v=N` no `index.html`; ao mudar CSS/JS, aumente o número para o celular não usar cache antigo.

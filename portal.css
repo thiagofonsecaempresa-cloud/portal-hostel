@@ -5,14 +5,15 @@ body{background:var(--bg);color:var(--txt);font-size:15px;line-height:1.5}
 .hidden{display:none!important}
 
 /* Logo: o PNG é escuro e transparente; em fundo verde ele é invertido para branco */
-.logo{display:block;width:132px;height:132px;margin:0 auto;object-fit:contain;filter:invert(1) brightness(1.15)}
-.logo.sm{width:64px;height:64px;margin:0}
+.logo{display:block;width:88px;height:88px;max-width:40vw;margin:0 auto;object-fit:contain;filter:invert(1) brightness(1.15)}
+.logo.sm{width:64px;height:64px;margin:0 auto}
+.logo.bar{width:36px;height:36px;margin:0;flex:none}
 
 /* Entrada */
 .login{min-height:100%;display:flex;align-items:center;justify-content:center;padding:28px 16px;color:var(--sh-creme);
   background:radial-gradient(1200px 600px at 50% -10%,#3b5c2b 0%,transparent 60%),linear-gradient(180deg,var(--sh-verde-esc),#1a2c14)}
 .login-inner{width:100%;max-width:400px}
-.brand{text-align:center;margin-bottom:22px}
+.brand{display:flex;flex-direction:column;align-items:center;text-align:center;margin-bottom:18px}
 .tagline{margin:14px 0 0;font-size:.78rem;letter-spacing:.22em;text-transform:uppercase;color:#cfd8bd}
 
 .card{background:var(--card);color:var(--txt);border-radius:18px;padding:26px;box-shadow:0 18px 50px rgba(0,0,0,.28)}
@@ -69,3 +70,6 @@ th{background:#f3eedf;color:#5a6049;font-size:.74rem;text-transform:uppercase;le
 tr:last-child td{border-bottom:0}
 td select{margin:0;padding:8px 9px}
 @media(max-width:600px){th:nth-child(2),td:nth-child(2){display:none}.hello h1{font-size:1.7rem}.card{padding:22px}}
+
+.top.compact{flex-wrap:nowrap}.top.compact .modtitle{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}.top.compact .btn{flex:none;padding:6px 10px}.top.compact .status{flex:none;white-space:nowrap}
+@media(max-width:480px){.top.compact{gap:8px;padding:6px 10px}.modtitle{font-size:.95rem}}
