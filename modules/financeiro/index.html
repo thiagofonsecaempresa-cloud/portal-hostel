@@ -1,11 +1,11 @@
 <!doctype html>
 <html lang="pt-BR">
 <head>
-<script src="../../shim.js?v=9"></script>
+<script src="../../shim.js?v=10"></script>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Financeiro do Hostel</title>
-<link rel="stylesheet" href="../../theme.css?v=9">
+<link rel="stylesheet" href="../../theme.css?v=10">
 <style>
   :root{--bg:#f6f1e6;--card:#fff;--ink:#1f2a1a;--muted:#6b7563;--line:#e4dccb;--rec:#4f7a3a;--desp:#c8923a;--saldo:#22381a;--bad:#a5392b;--soft:#f1ecdd}
   *{box-sizing:border-box}
@@ -48,6 +48,12 @@
   .tag.r{background:#e3eed9;color:#2f4a24}.tag.d{background:#f7ead2;color:#7a5314}
   .empty{padding:18px;text-align:center;color:var(--muted)}
   .msg{min-height:1.2em;font-weight:600}.msg.err{color:var(--bad)}
+  .imp-row.dup{opacity:.55}
+  .imp-row input[type=text],.imp-row select{padding:6px 8px;font-size:.85rem}
+  .imp-row td{vertical-align:middle}
+  .impbar{display:flex;gap:10px;flex-wrap:wrap;align-items:end;margin-bottom:10px}
+  .impbar>div{min-width:150px}
+  .warnbox{background:#fff7e6;border:1px solid #f0dba8;border-radius:10px;padding:8px 10px;font-size:.85rem;margin:8px 0}
   @media(max-width:700px){
     .filters{grid-template-columns:1fr 1fr}.kpis{grid-template-columns:1fr}
     .form{grid-template-columns:1fr 1fr}.form .w2,.form .w3{grid-column:span 2}
@@ -101,6 +107,26 @@
       <span id="formMsg" class="msg" role="status"></span>
     </div>
   </form>
+</section>
+
+<section class="card" id="impCard">
+  <h2>Importar extrato do banco</h2>
+  <p class="muted small">Baixe o extrato no app/internet banking em <b>OFX</b> (ou CSV) e envie aqui. Você revisa cada linha antes de importar. Nubank: Exportar extrato → OFX. Santander: Conta Corrente → Extrato (Money).</p>
+  <div class="impbar">
+    <div><label for="impFile">Arquivo (.ofx ou .csv)</label><input id="impFile" type="file" accept=".ofx,.csv,.txt"></div>
+    <div><label for="impUnit">Unidade deste extrato</label><select id="impUnit"><option value="SR">SR</option><option value="MK">MK</option></select></div>
+  </div>
+  <p id="impMsg" class="msg" role="status"></p>
+  <div id="impReview" style="display:none">
+    <div class="warnbox" id="impSummary"></div>
+    <div class="tablewrap"><table id="impTbl"></table></div>
+    <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-top:10px">
+      <label class="chk" style="margin:0"><input id="impLearn" type="checkbox" checked> Lembrar categorias para descrições parecidas</label>
+      <span style="flex:1"></span>
+      <button class="ghost" type="button" id="impCancel">Cancelar</button>
+      <button type="button" id="impGo">Importar selecionados</button>
+    </div>
+  </div>
 </section>
 
 <section class="card">
@@ -302,6 +328,150 @@
     a.href = URL.createObjectURL(new Blob(['﻿' + out.join('\r\n')], { type: 'text/csv;charset=utf-8' }));
     a.download = 'financeiro-' + f.from + '_a_' + f.to + '.csv'; document.body.appendChild(a); a.click(); a.remove();
   };
+
+
+  // ================= Importar extrato (OFX / CSV) =================
+  var imp = [];            // linhas do extrato em revisão
+  var rules = {};          // aprendizado: "receita:booking com" -> categoria
+  try { rules = JSON.parse(localStorage.getItem('rules') || '{}') || {}; } catch (x) { rules = {}; }
+  function norm(s) { return String(s || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/[^a-z\s]/g, ' ').replace(/\s+/g, ' ').trim(); }
+  function ruleKey(tp, desc) { var w = norm(desc).split(' ').filter(function (x) { return x.length >= 3; }).slice(0, 3).join(' '); return w ? tp + ':' + w : ''; }
+  function suggest(tp, desc) {
+    var n = norm(desc), best = '', bl = 0;
+    Object.keys(rules).forEach(function (k) { if (k.indexOf(tp + ':') !== 0) return; var kw = k.slice(tp.length + 1); if (kw && n.indexOf(kw) >= 0 && kw.length > bl) { best = rules[k]; bl = kw.length; } });
+    return best;
+  }
+  function decode(buf) {
+    var u8 = new Uint8Array(buf), head = new TextDecoder('latin1').decode(u8.slice(0, 600));
+    var cs = (head.match(/CHARSET:\s*(\w+)/i) || [])[1];
+    try { if (!cs || /utf|65001/i.test(cs)) return new TextDecoder('utf-8', { fatal: true }).decode(u8); } catch (x) {}
+    return new TextDecoder('windows-1252').decode(u8);
+  }
+  function num(s) {
+    s = String(s == null ? '' : s).replace(/[R$\s ]/g, '');
+    if (!s) return NaN;
+    var neg = /^\(.*\)$/.test(s) || /-$/.test(s); s = s.replace(/[()]/g, '').replace(/-$/, '');
+    var lc = s.lastIndexOf(','), ld = s.lastIndexOf('.');
+    if (lc >= 0 && ld >= 0) s = lc > ld ? s.replace(/\./g, '').replace(',', '.') : s.replace(/,/g, '');
+    else if (lc >= 0) s = s.replace(',', '.');
+    var v = parseFloat(s); return neg ? -Math.abs(v) : v;
+  }
+  function parseOfx(txt) {
+    var out = [], parts = txt.split(/<STMTTRN>/i).slice(1);
+    parts.forEach(function (p) {
+      p = p.split(/<\/STMTTRN>/i)[0]; var f = {}, re = /<(\w+)>([^<\r\n]*)/g, m;
+      while ((m = re.exec(p))) f[m[1].toUpperCase()] = m[2].trim();
+      var d = f.DTPOSTED || ''; if (d.length < 8) return;
+      var amt = num(f.TRNAMT); if (isNaN(amt) || amt === 0) return;
+      out.push({ date: d.slice(0, 4) + '-' + d.slice(4, 6) + '-' + d.slice(6, 8), amount: amt, desc: (f.MEMO || f.NAME || '').replace(/\s+/g, ' ').trim(), id: f.FITID || '' });
+    });
+    return out;
+  }
+  function splitCsv(line, sep) {
+    var r = [], c = '', q = false;
+    for (var i = 0; i < line.length; i++) { var ch = line[i]; if (ch === '"') { if (q && line[i + 1] === '"') { c += '"'; i++; } else q = !q; } else if (ch === sep && !q) { r.push(c); c = ''; } else c += ch; }
+    r.push(c); return r.map(function (x) { return x.trim(); });
+  }
+  function parseDate(s) {
+    s = String(s || '').trim(); var m;
+    if ((m = s.match(/^(\d{4})-(\d{2})-(\d{2})/))) return m[1] + '-' + m[2] + '-' + m[3];
+    if ((m = s.match(/^(\d{1,2})[\/.-](\d{1,2})[\/.-](\d{2,4})/))) { var y = m[3].length === 2 ? '20' + m[3] : m[3]; return y + '-' + pad(+m[2]) + '-' + pad(+m[1]); }
+    return '';
+  }
+  function parseCsv(txt) {
+    var lines = txt.replace(/^﻿/, '').split(/\r?\n/).filter(function (l) { return l.trim(); });
+    var hi = -1, sep = ';', H = [];
+    for (var i = 0; i < Math.min(lines.length, 30); i++) {
+      var s = (lines[i].split(';').length >= lines[i].split(',').length) ? ';' : ',', c = splitCsv(lines[i], s).map(norm);
+      if (c.some(function (x) { return /^data/.test(x); }) && c.some(function (x) { return /valor|credito|debito/.test(x); })) { hi = i; sep = s; H = c; break; }
+    }
+    if (hi < 0) throw new Error('Não encontrei as colunas Data e Valor no CSV. Use o arquivo OFX, se possível.');
+    var iD = H.findIndex(function (x) { return /^data/.test(x); }), iV = H.findIndex(function (x) { return x === 'valor' || /^valor/.test(x); });
+    var iC = H.findIndex(function (x) { return /credito/.test(x); }), iB = H.findIndex(function (x) { return /debito/.test(x); });
+    var iT = H.findIndex(function (x) { return /descri|historico|lancamento|memo/.test(x); }), iI = H.findIndex(function (x) { return /identificador|documento|numero/.test(x); });
+    var out = [];
+    lines.slice(hi + 1).forEach(function (l) {
+      var c = splitCsv(l, sep), d = parseDate(c[iD]); if (!d) return;
+      var a = iV >= 0 ? num(c[iV]) : NaN;
+      if (isNaN(a) && (iC >= 0 || iB >= 0)) { var cr = num(c[iC]), db = num(c[iB]); a = (isNaN(cr) ? 0 : Math.abs(cr)) - (isNaN(db) ? 0 : Math.abs(db)); }
+      if (isNaN(a) || a === 0) return;
+      out.push({ date: d, amount: a, desc: (iT >= 0 ? c[iT] : '').replace(/\s+/g, ' '), id: iI >= 0 ? c[iI] : '' });
+    });
+    return out;
+  }
+  function impMsg(t, err) { var m = $('impMsg'); m.textContent = t || ''; m.className = 'msg' + (err ? ' err' : ''); }
+  function srcOf(r) { return (r.id ? r.id + '|' : '') + r.date + '|' + r.amount.toFixed(2) + '|' + norm(r.desc).slice(0, 30); }
+  function impTable() {
+    var h = '<thead><tr><th><input type="checkbox" id="impAll" aria-label="Marcar todas" checked></th><th>Data</th><th>Descrição</th><th class="n">Valor</th><th>Tipo</th><th>Categoria</th><th>Un.</th></tr></thead><tbody>';
+    imp.forEach(function (r, i) {
+      h += '<tr class="imp-row' + (r.dup ? ' dup' : '') + '"><td><input type="checkbox" data-i="' + i + '" data-f="on"' + (r.on ? ' checked' : '') + '></td>'
+        + '<td>' + r.date.split('-').reverse().join('/') + '</td><td>' + esc(r.desc) + (r.dup ? '<br><span class="tag">já importado</span>' : '') + '</td>'
+        + '<td class="n ' + (r.amount >= 0 ? 'pos' : 'neg') + '">' + money(r.amount) + '</td>'
+        + '<td><select data-i="' + i + '" data-f="type"><option value="receita"' + (r.type === 'receita' ? ' selected' : '') + '>Receita</option><option value="despesa"' + (r.type === 'despesa' ? ' selected' : '') + '>Despesa</option></select></td>'
+        + '<td><input type="text" data-i="' + i + '" data-f="cat" list="' + (r.type === 'receita' ? 'catsR' : 'catsD') + '" value="' + esc(r.cat) + '" placeholder="Categoria" maxlength="40"></td>'
+        + '<td><select data-i="' + i + '" data-f="unit"><option' + (r.unit === 'SR' ? ' selected' : '') + '>SR</option><option' + (r.unit === 'MK' ? ' selected' : '') + '>MK</option></select></td></tr>';
+    });
+    $('impTbl').innerHTML = h + '</tbody>';
+    impSummary();
+  }
+  function impSummary() {
+    var sel = imp.filter(function (r) { return r.on; }), ent = 0, sai = 0;
+    sel.forEach(function (r) { if (r.type === 'receita') ent += Math.abs(r.amount); else sai += Math.abs(r.amount); });
+    var dups = imp.filter(function (r) { return r.dup; }).length, nocat = sel.filter(function (r) { return !r.cat.trim(); }).length;
+    $('impSummary').innerHTML = '<b>' + imp.length + '</b> linhas no arquivo · <b>' + sel.length + '</b> selecionadas · Receitas ' + money(ent) + ' · Despesas ' + money(sai)
+      + (dups ? ' · ' + dups + ' já importadas (desmarcadas)' : '') + (nocat ? '<br>⚠ ' + nocat + ' selecionada(s) sem categoria — preencha para importar.' : '');
+    $('impGo').textContent = 'Importar ' + sel.length + ' selecionados';
+  }
+  function impClose() { imp = []; $('impReview').style.display = 'none'; $('impFile').value = ''; }
+  $('impFile').addEventListener('change', function () {
+    var file = this.files[0]; if (!file) return; impMsg('Lendo arquivo…');
+    var rd = new FileReader();
+    rd.onerror = function () { impMsg('Não consegui ler o arquivo.', true); };
+    rd.onload = function () {
+      try {
+        var txt = decode(rd.result), rows = /<STMTTRN>/i.test(txt) ? parseOfx(txt) : parseCsv(txt);
+        if (!rows.length) { impMsg('Não encontrei lançamentos neste arquivo.', true); return; }
+        var have = {}; Object.keys(entries).forEach(function (k) { if (entries[k].src) have[entries[k].src] = 1; });
+        var seen = {};
+        imp = rows.map(function (r) {
+          var tp = r.amount >= 0 ? 'receita' : 'despesa', s = srcOf(r); if (seen[s]) { seen[s]++; s += '#' + seen[s]; } else seen[s] = 1;
+          var dup = !!have[s];
+          return { date: r.date, amount: r.amount, desc: r.desc, src: s, type: tp, cat: suggest(tp, r.desc), unit: $('impUnit').value, dup: dup, on: !dup };
+        }).sort(function (a, b) { return a.date < b.date ? 1 : -1; });
+        impMsg(''); $('impReview').style.display = ''; impTable();
+      } catch (e) { impMsg(e.message || 'Arquivo não reconhecido.', true); }
+    };
+    rd.readAsArrayBuffer(file);
+  });
+  $('impUnit').addEventListener('change', function () { imp.forEach(function (r) { r.unit = $('impUnit').value; }); if (imp.length) impTable(); });
+  $('impTbl').addEventListener('change', function (ev) {
+    var el = ev.target;
+    if (el.id === 'impAll') { imp.forEach(function (r) { r.on = el.checked; }); impTable(); return; }
+    var i = el.dataset.i; if (i == null) return; var r = imp[i], f = el.dataset.f;
+    if (f === 'on') r.on = el.checked;
+    else if (f === 'type') { r.type = el.value; r.cat = suggest(r.type, r.desc); impTable(); return; }
+    else if (f === 'cat') r.cat = el.value;
+    else if (f === 'unit') r.unit = el.value;
+    impSummary();
+  });
+  $('impCancel').onclick = function () { impClose(); impMsg(''); };
+  $('impGo').onclick = function () {
+    var sel = imp.filter(function (r) { return r.on; });
+    if (!sel.length) { impMsg('Nenhuma linha selecionada.', true); return; }
+    if (sel.some(function (r) { return !r.cat.trim(); })) { impMsg('Preencha a categoria de todas as linhas selecionadas.', true); impSummary(); return; }
+    var learn = $('impLearn').checked, minM = '9999-99', maxM = '0000-00';
+    sel.forEach(function (r, n) {
+      var id = Date.now().toString(36) + n.toString(36) + Math.random().toString(36).slice(2, 6);
+      var e = { id: id, type: r.type, date: r.date, unit: r.unit, category: r.cat.trim(), amount: Math.round(Math.abs(r.amount) * 100) / 100, note: r.desc.slice(0, 120), rec: false, src: r.src };
+      entries[id] = e; localStorage.setItem('e:' + id, JSON.stringify(e));
+      if (learn) { var k = ruleKey(r.type, r.desc); if (k) rules[k] = r.cat.trim(); }
+      var m = r.date.slice(0, 7); if (m < minM) minM = m; if (m > maxM) maxM = m;
+    });
+    if (learn) localStorage.setItem('rules', JSON.stringify(rules));
+    if (minM < $('fFrom').value) $('fFrom').value = minM; if (maxM > $('fTo').value) $('fTo').value = maxM;
+    var n = sel.length; impClose(); impMsg(n + ' lançamentos importados.'); render();
+  };
+  $('cats').insertAdjacentHTML('afterend', '<datalist id="catsR">' + CATS.receita.map(function (c) { return '<option value="' + esc(c) + '">'; }).join('') + '</datalist><datalist id="catsD">' + CATS.despesa.map(function (c) { return '<option value="' + esc(c) + '">'; }).join('') + '</datalist>');
 
   var td = new Date(); $('eDate').value = td.getFullYear() + '-' + pad(td.getMonth() + 1) + '-' + pad(td.getDate());
   $('fFrom').value = addMs(nowYm, -5); $('fTo').value = nowYm;
