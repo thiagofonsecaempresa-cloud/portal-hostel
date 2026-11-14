@@ -19,7 +19,14 @@ Os dados ficam na nuvem (Supabase, plano gratuito) e a segurança é feita pelo 
    `update public.profiles set role = 'admin' where email = 'SEU_EMAIL';`
 5. **Chaves**: *Project Settings → API*. Copie a **Project URL** e a chave **anon/public** para o `config.js`. Nunca use a `service_role`.
 6. **Publicar**: *Settings → Pages → Deploy from a branch → main / (root)*. O portal abre na URL mostrada.
-7. **Pessoas novas**: crie em *Authentication → Users → Add user*; depois, no portal, *Usuários e acessos* para escolher o papel.
+7. **Pessoas novas**: cada pessoa abre o portal, clica em **Criar conta** e entra como `pendente` (sem ver nada). Você libera em *Usuários e acessos*, escolhendo o papel. (Também dá para criar em *Authentication → Users → Add user*.)
+
+## Fechar o cadastro depois que todos entraram
+
+1. Supabase → *Authentication → Sign In / Providers → User Signups* → desligue **Allow new users to sign up** → *Save changes*. É isto que realmente fecha o cadastro.
+2. No `config.js`, troque `ALLOW_SIGNUP: true` por `false` para esconder o botão “Criar conta”.
+
+Para cadastrar alguém depois, ligue de novo ou crie a pessoa em *Authentication → Users*.
 
 ## Trazer os dados atuais
 

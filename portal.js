@@ -19,6 +19,7 @@
 
   function show(view) {
     ['viewLogin', 'viewHome', 'viewModule', 'viewAdmin'].forEach(function (v) { $(v).classList.toggle('hidden', v !== view); });
+    if (view === 'viewLogin') { $('loginForm').classList.remove('hidden'); $('signupForm').classList.add('hidden'); }
   }
   function setMsg(el, text, ok) { el.textContent = text || ''; el.classList.toggle('ok', !!ok); }
 
@@ -148,6 +149,11 @@
     if (me.role === 'admin') cards.appendChild(tile('Usuários e acessos', 'Definir quem acessa o quê.', openAdmin));
     setMsg($('homeMsg'), me.role === 'pendente' ? 'Seu acesso ainda não foi liberado. Peça ao administrador.' : '');
     show('viewHome');
+    if (me.role === 'admin') {
+      sb.from('profiles').select('id', { count: 'exact', head: true }).eq('role', 'pendente').then(function (r) {
+        if (!r.error && r.count > 0) setMsg($('homeMsg'), r.count + (r.count === 1 ? ' pessoa aguarda' : ' pessoas aguardam') + ' liberação em “Usuários e acessos”.', true);
+      });
+    }
   }
 
   function tile(title, desc, onClick) {
@@ -191,6 +197,7 @@
     var tb = $('userRows'); tb.innerHTML = '';
     if (r.error) { setMsg($('adminMsg'), 'Erro ao carregar usuários.'); return; }
     setMsg($('adminMsg'), '');
+    r.data.sort(function (a, b) { return (b.role === 'pendente') - (a.role === 'pendente'); });
     r.data.forEach(function (u) {
       var tr = document.createElement('tr');
       var tdN = document.createElement('td'); tdN.textContent = u.nome || '';
@@ -230,6 +237,38 @@
     enter(r.data.user);
   });
 
+  function showForm(which) {
+    $('loginForm').classList.toggle('hidden', which !== 'login');
+    $('signupForm').classList.toggle('hidden', which !== 'signup');
+    setMsg($('loginMsg'), ''); setMsg($('signupMsg'), '');
+  }
+  $('goSignup').addEventListener('click', function (e) { e.preventDefault(); showForm('signup'); });
+  $('goLogin').addEventListener('click', function (e) { e.preventDefault(); showForm('login'); });
+
+  $('signupForm').addEventListener('submit', async function (e) {
+    e.preventDefault();
+    var nome = $('signupNome').value.trim(), email = $('signupEmail').value.trim();
+    var p1 = $('signupPass').value, p2 = $('signupPass2').value, msg = $('signupMsg');
+    if (p1.length < 8) { setMsg(msg, 'A senha precisa ter pelo menos 8 caracteres.'); return; }
+    if (p1 !== p2) { setMsg(msg, 'As senhas não são iguais.'); return; }
+    var btn = $('signupBtn'); btn.disabled = true; setMsg(msg, '');
+    var r = await sb.auth.signUp({ email: email, password: p1, options: { data: { nome: nome } } });
+    btn.disabled = false;
+    if (r.error) {
+      var t = String(r.error.message || '');
+      if (/already|registered/i.test(t)) setMsg(msg, 'Este e-mail já tem cadastro. Use “Entrar”.');
+      else if (/not allowed|disabled/i.test(t)) setMsg(msg, 'O cadastro está fechado. Peça ao administrador.');
+      else if (/rate|too many|seconds/i.test(t)) setMsg(msg, 'Muitas tentativas. Aguarde um pouco e tente de novo.');
+      else if (/password/i.test(t)) setMsg(msg, 'Senha fraca ou inválida. Use uma senha maior, com letras e números.');
+      else setMsg(msg, 'Não foi possível criar a conta. Tente novamente.');
+      return;
+    }
+    $('signupPass').value = ''; $('signupPass2').value = '';
+    if (r.data && r.data.session) { enter(r.data.user); return; }
+    showForm('login');
+    setMsg($('loginMsg'), 'Conta criada. Confirme pelo e-mail que enviamos e depois entre.', true);
+  });
+
   $('btnLogout').addEventListener('click', async function () {
     await sb.auth.signOut(); me = null; show('viewLogin');
   });
@@ -251,6 +290,7 @@
       return;
     }
     sb = window.supabase.createClient(cfg.SUPABASE_URL, cfg.SUPABASE_ANON_KEY);
+    if (cfg.ALLOW_SIGNUP === false) { document.querySelectorAll('.switch').forEach(function (el) { el.classList.add('hidden'); }); }
     sb.auth.onAuthStateChange(function (ev) {
       if (ev === 'SIGNED_OUT') { me = null; show('viewLogin'); }
     });

@@ -18,6 +18,19 @@
     <label>Senha<input id="loginPass" type="password" autocomplete="current-password" required></label>
     <button class="btn" id="loginBtn" type="submit">Entrar</button>
     <p id="loginMsg" class="msg" role="alert"></p>
+    <p class="muted small switch">Ainda não tem conta? <a href="#" id="goSignup">Criar conta</a></p>
+  </form>
+
+  <form id="signupForm" class="card hidden">
+    <h1>Criar conta</h1>
+    <p class="muted">Depois de criar, o administrador precisa liberar o seu acesso.</p>
+    <label>Seu nome<input id="signupNome" type="text" autocomplete="name" maxlength="80" required></label>
+    <label>E-mail<input id="signupEmail" type="email" autocomplete="username" required></label>
+    <label>Senha (mínimo 8 caracteres)<input id="signupPass" type="password" autocomplete="new-password" minlength="8" required></label>
+    <label>Repita a senha<input id="signupPass2" type="password" autocomplete="new-password" minlength="8" required></label>
+    <button class="btn" id="signupBtn" type="submit">Criar conta</button>
+    <p id="signupMsg" class="msg" role="alert"></p>
+    <p class="muted small switch">Já tem conta? <a href="#" id="goLogin">Entrar</a></p>
   </form>
 </main>
 

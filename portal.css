@@ -19,6 +19,8 @@ input:focus,select:focus{outline:2px solid var(--azul2);border-color:var(--azul2
 .muted{color:var(--mut)}.small{font-size:.85rem}
 .msg{min-height:1.2em;margin:12px 0 0;font-size:.92rem;color:var(--err)}
 .msg.ok{color:var(--ok)}
+.switch{margin:16px 0 0;text-align:center}
+.switch a{color:var(--azul2)}
 .top{display:flex;align-items:center;gap:10px;padding:10px 16px;background:#fff;border-bottom:1px solid var(--borda);position:sticky;top:0;z-index:5;flex-wrap:wrap}
 .spacer{flex:1}
 .wrap{max-width:960px;margin:0 auto;padding:20px 16px}
