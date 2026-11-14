@@ -1,8 +1,8 @@
-// Preencha com os dados do SEU projeto Supabase:
-// Supabase > Project Settings > API (ou "Connect")
-// A chave "anon/public" PODE ficar aqui: ela é pública por desenho e quem protege
-// os dados são as regras (RLS) do schema.sql. NUNCA coloque a chave "service_role".
+// Dados do projeto Supabase "portal-hostel".
+// A chave publishable (sb_publishable_...) PODE ficar aqui: é pública por desenho e quem
+// protege os dados são as regras (RLS) do schema.sql.
+// NUNCA coloque aqui a chave "secret" (sb_secret_...) nem a "service_role".
 window.PORTAL_CONFIG = {
-  SUPABASE_URL: 'COLE_AQUI_A_URL_DO_PROJETO',
-  SUPABASE_ANON_KEY: 'COLE_AQUI_A_CHAVE_ANON_PUBLICA'
+  SUPABASE_URL: 'https://uxfamjtfcndxdhqjquqv.supabase.co',
+  SUPABASE_ANON_KEY: 'sb_publishable_BUpvEsloLD0Bhz7-6GutKQ_r4bPgR1j'
 };
