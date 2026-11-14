@@ -24,25 +24,32 @@
   // no config.js. (Esconder o botão evita acidentes; os dados continuam seguros pelo banco.)
   var flags = {};
   try { flags = window.parent.PORTAL_FLAGS || {}; } catch (e) {}
-  if (!flags.canImport) {
-    var mod = (location.pathname.match(/\/modules\/([^\/]+)\//) || [])[1];
-    var RULES = {
-      rotatividade: [{ sel: '#importBtn' }],
-      lsr:          [{ sel: 'button[onclick*="importFile"]' }, { sel: 'button[onclick*="resetData"]' }],
-      hostel:       [{ sel: '#importFile', up: '.report-box' }, { sel: '#clearData', up: '.report-box' }],
-      gestao:       [{ sel: '#importBtn' }, { sel: '#resetBtn' }]
-    }[mod] || [];
-    var hide = function () {
-      RULES.forEach(function (r) {
-        document.querySelectorAll(r.sel).forEach(function (el) {
-          var t = r.up ? el.closest(r.up) : el;
-          if (t) t.style.setProperty('display', 'none', 'important');
-        });
+  var mod = (location.pathname.match(/\/modules\/([^\/]+)\//) || [])[1];
+  // Botões que apagam dados de TODOS na nuvem: removidos para qualquer pessoa, sempre.
+  var WIPE = {
+    rotatividade: [{ sel: '.maintenance-panel' }],
+    lsr:          [{ sel: 'button[onclick*="resetData"]' }],
+    hostel:       [{ sel: '#clearData', up: '.report-box' }],
+    gestao:       [{ sel: '#resetBtn' }]
+  }[mod] || [];
+  // Importar: só o admin, e só enquanto ALLOW_IMPORT estiver ligado.
+  var IMPORT = flags.canImport ? [] : ({
+    rotatividade: [{ sel: '#importBtn' }],
+    lsr:          [{ sel: 'button[onclick*="importFile"]' }],
+    hostel:       [{ sel: '#importFile', up: '.report-box' }],
+    gestao:       [{ sel: '#importBtn' }]
+  }[mod] || []);
+  var strip = function () {
+    WIPE.concat(IMPORT).forEach(function (r) {
+      document.querySelectorAll(r.sel).forEach(function (el) {
+        var t = r.up ? el.closest(r.up) : el;
+        if (t) t.remove();
       });
-    };
-    document.addEventListener('DOMContentLoaded', hide);
-    window.addEventListener('load', hide);
-  }
+    });
+  };
+  document.addEventListener('DOMContentLoaded', strip);
+  window.addEventListener('load', strip);
+
   // Barra única: o portal já mostra logo + nome da página, então o cabeçalho próprio
   // dos módulos some na tela (a impressão continua igual).
   (function () {
