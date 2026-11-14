@@ -1,11 +1,11 @@
 <!doctype html>
 <html lang="pt-BR">
 <head>
-<script src="../../shim.js?v=14"></script>
+<script src="../../shim.js?v=15"></script>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Financeiro do Hostel</title>
-<link rel="stylesheet" href="../../theme.css?v=14">
+<link rel="stylesheet" href="../../theme.css?v=15">
 <style>
   :root{--bg:#f6f1e6;--card:#fff;--ink:#1f2a1a;--muted:#6b7563;--line:#e4dccb;--rec:#4f7a3a;--desp:#c8923a;--saldo:#22381a;--bad:#a5392b;--soft:#f1ecdd}
   *{box-sizing:border-box}
@@ -104,7 +104,7 @@
       </div></div>
     <div><label for="eDate">Data</label><input id="eDate" type="date" required></div>
     <div><label for="eUnit">Unidade</label><select id="eUnit" required><option value="SR">SR</option><option value="MK">MK</option></select></div>
-    <div class="w2"><label for="eCat">Categoria</label><input id="eCat" list="cats" maxlength="40" required placeholder="Escolha ou digite"><datalist id="cats"></datalist></div>
+    <div class="w2"><label for="eCat">Categoria</label><select id="eCat" required></select></div><datalist id="cats"></datalist>
     <div><label for="eVal">Valor (R$)</label><input id="eVal" type="number" min="0.01" step="0.01" inputmode="decimal" required></div>
     <div class="w3"><label for="eNote">Observação (opcional)</label><input id="eNote" maxlength="120"></div>
     <div class="w3 chk"><label class="chk" style="margin:0"><input id="eRec" type="checkbox"> Repete todo mês</label>
@@ -187,6 +187,18 @@
   };
   var KIND = {};
   CATS.despesa = CATS.despesa.map(function (s) { var p = s.split('|'); if (p[1]) KIND[p[0]] = p[1] === 'F' ? 'Custo fixo' : 'Custo variável'; return p[0]; });
+  var extra = { receita: [], despesa: [] };
+  function catOpts(tp, cur) {
+    var list = catList(tp).slice(); if (cur && list.indexOf(cur) < 0) list.push(cur);
+    return '<option value="">Escolha a categoria…</option>' + list.map(function (c) {
+      return '<option value="' + esc(c) + '"' + (c === cur ? ' selected' : '') + '>' + esc(c) + (KIND[c] ? ' (' + (KIND[c] === 'Custo fixo' ? 'fixo' : 'variável') + ')' : '') + '</option>';
+    }).join('') + '<option value="__new">➕ Nova categoria…</option>';
+  }
+  function askNew(tp) {
+    var n = (window.prompt('Nome da nova categoria:') || '').trim().slice(0, 40);
+    if (n && extra[tp].indexOf(n) < 0 && CATS[tp].indexOf(n) < 0) extra[tp].push(n);
+    return n;
+  }
   var entries = {};
   var tipo = 'receita', editId = null;
   var moneyF = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' });
@@ -293,13 +305,17 @@
   // ---- formulário ----
   function setTipo(t) {
     tipo = t; $('tRec').className = t === 'receita' ? 'on r' : ''; $('tDesp').className = t === 'despesa' ? 'on d' : '';
-    $('cats').innerHTML = catList(t).map(function (c) { return '<option value="' + esc(c) + '"' + (KIND[c] ? ' label="' + KIND[c] + '"' : '') + '>'; }).join('');
+    $('eCat').innerHTML = catOpts(t, '');
   }
   function msg(t, err) { var m = $('formMsg'); m.textContent = t || ''; m.className = 'msg' + (err ? ' err' : ''); }
   function resetForm() {
     editId = null; $('formTitle').textContent = 'Novo lançamento'; $('btnSave').textContent = 'Lançar'; $('btnCancel').style.display = 'none';
-    $('eCat').value = ''; $('eVal').value = ''; $('eNote').value = ''; $('eRec').checked = false; $('eRecEnd').value = ''; $('recEndBox').style.display = 'none';
+    $('eCat').innerHTML = catOpts(tipo, ''); $('eVal').value = ''; $('eNote').value = ''; $('eRec').checked = false; $('eRecEnd').value = ''; $('recEndBox').style.display = 'none';
   }
+  $('eCat').addEventListener('change', function () {
+    if (this.value !== '__new') return;
+    var n = askNew(tipo); this.innerHTML = catOpts(tipo, n); this.value = n;
+  });
   $('tRec').onclick = function () { setTipo('receita'); };
   $('tDesp').onclick = function () { setTipo('despesa'); };
   $('eRec').onchange = function () { $('recEndBox').style.display = this.checked ? 'block' : 'none'; };
@@ -325,7 +341,7 @@
       delete entries[e.id]; localStorage.removeItem('e:' + e.id); render();
     } else if (b.dataset.ed) {
       var x = entries[b.dataset.ed]; if (!x) return;
-      editId = x.id; setTipo(x.type); $('eDate').value = x.date; $('eUnit').value = x.unit; $('eCat').value = x.category; $('eVal').value = x.amount; $('eNote').value = x.note || '';
+      editId = x.id; setTipo(x.type); $('eDate').value = x.date; $('eUnit').value = x.unit; $('eCat').innerHTML = catOpts(x.type, x.category); $('eCat').value = x.category; $('eVal').value = x.amount; $('eNote').value = x.note || '';
       $('eRec').checked = !!x.rec; $('recEndBox').style.display = x.rec ? 'block' : 'none'; $('eRecEnd').value = x.recEnd || '';
       $('formTitle').textContent = 'Editar lançamento'; $('btnSave').textContent = 'Salvar alterações'; $('btnCancel').style.display = '';
       msg(''); $('form').scrollIntoView({ behavior: 'smooth', block: 'center' });
@@ -432,7 +448,7 @@
         + '<td>' + r.date.split('-').reverse().join('/') + '</td><td>' + esc(r.desc) + (r.dup ? '<br><span class="tag">já importado</span>' : '') + '</td>'
         + '<td class="n ' + (r.amount >= 0 ? 'pos' : 'neg') + '">' + money(r.amount) + '</td>'
         + '<td><select data-i="' + i + '" data-f="type"><option value="receita"' + (r.type === 'receita' ? ' selected' : '') + '>Receita</option><option value="despesa"' + (r.type === 'despesa' ? ' selected' : '') + '>Despesa</option></select></td>'
-        + '<td><input type="text" data-i="' + i + '" data-f="cat" list="' + (r.type === 'receita' ? 'catsR' : 'catsD') + '" value="' + esc(r.cat) + '" placeholder="Escolha ou crie uma" maxlength="40">' + (r.sug && r.cat ? '<br><span class="sugtag">sugerida · confirme ou altere</span>' : '') + '</td>'
+        + '<td><select data-i="' + i + '" data-f="cat">' + catOpts(r.type, r.cat) + '</select>' + (r.sug && r.cat ? '<br><span class="sugtag">sugerida · confirme ou altere</span>' : '') + '</td>'
         + '<td><select data-i="' + i + '" data-f="unit"><option value=""' + (!r.unit ? ' selected' : '') + '>—</option><option' + (r.unit === 'SR' ? ' selected' : '') + '>SR</option><option' + (r.unit === 'MK' ? ' selected' : '') + '>MK</option></select></td></tr>';
     });
     $('impTbl').innerHTML = h + '</tbody>';
@@ -474,7 +490,7 @@
     var i = el.dataset.i; if (i == null) return; var r = imp[i], f = el.dataset.f;
     if (f === 'on') r.on = el.checked;
     else if (f === 'type') { r.type = el.value; r.cat = suggest(r.type, r.desc); r.sug = !!r.cat; impTable(); return; }
-    else if (f === 'cat') { r.cat = el.value; r.sug = false; var tg = el.parentNode.querySelector('.sugtag'); if (tg) tg.remove(); }
+    else if (f === 'cat') { if (el.value === '__new') { r.cat = askNew(r.type); r.sug = false; impTable(); return; } r.cat = el.value; r.sug = false; var tg = el.parentNode.querySelector('.sugtag'); if (tg) tg.remove(); }
     else if (f === 'unit') r.unit = el.value;
     impSummary();
   });
@@ -497,7 +513,7 @@
     var n = sel.length; impClose(); impMsg(n + ' lançamentos importados.'); fillLists(); render();
   };
   function catList(tp) {
-    var s = CATS[tp].slice(); Object.keys(entries).forEach(function (k) { var e = entries[k]; if (e.type === tp && s.indexOf(e.category) < 0) s.push(e.category); }); return s;
+    var s = CATS[tp].concat(extra[tp]); Object.keys(entries).forEach(function (k) { var e = entries[k]; if (e.type === tp && s.indexOf(e.category) < 0) s.push(e.category); }); return s;
   }
   function fillLists() {
     var mk = function (id, tp) { var d = $(id); if (!d) { $('cats').insertAdjacentHTML('afterend', '<datalist id="' + id + '"></datalist>'); d = $(id); } d.innerHTML = catList(tp).map(function (c) { return '<option value="' + esc(c) + '"' + (KIND[c] ? ' label="' + KIND[c] + '"' : '') + '>'; }).join(''); };
