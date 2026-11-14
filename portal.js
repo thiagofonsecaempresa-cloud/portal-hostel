@@ -345,6 +345,29 @@
     setMsg($('loginMsg'), 'Conta criada. Confirme pelo e-mail que enviamos e depois entre.', true);
   });
 
+  // Atualizar (para quem usa o portal instalado como app, sem botão "recarregar" do navegador):
+  // rebaixa do servidor, ignorando o cache, as telas e os arquivos de cada módulo e recarrega.
+  $('btnRefresh').addEventListener('click', async function () {
+    var b = this; b.disabled = true; b.textContent = 'Atualizando…';
+    try {
+      if (store.hasPending()) await store.flush();
+      var urls = {};
+      var add = function (u) { try { var a = new URL(u, location.href); if (a.origin === location.origin) urls[a.href] = 1; } catch (e) {} };
+      add(location.pathname);
+      document.querySelectorAll('link[href],script[src],img[src]').forEach(function (el) { add(el.getAttribute('href') || el.getAttribute('src')); });
+      for (var i = 0; i < MODULES.length; i++) {
+        var base = new URL(MODULES[i].path, location.href).href; urls[base] = 1;
+        try {
+          var html = await (await fetch(base, { cache: 'reload' })).text(), re = /(?:src|href)=["']([^"'#]+)["']/g, m;
+          while ((m = re.exec(html))) { if (!/^(https?:|data:|mailto:)/.test(m[1])) add(new URL(m[1], base).href); }
+        } catch (e) {}
+      }
+      await Promise.all(Object.keys(urls).map(function (u) { return fetch(u, { cache: 'reload' }).catch(function () {}); }));
+      if (window.caches) { try { (await caches.keys()).forEach(function (k) { caches.delete(k); }); } catch (e) {} }
+    } catch (e) { console.error(e); }
+    location.reload();
+  });
+
   $('btnLogout').addEventListener('click', async function () {
     await sb.auth.signOut(); me = null; show('viewLogin');
   });
