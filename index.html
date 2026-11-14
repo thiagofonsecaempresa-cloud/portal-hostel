@@ -4,46 +4,59 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="robots" content="noindex, nofollow">
-<title>Portal do Hostel</title>
+<meta name="theme-color" content="#22381a">
+<title>Portal São Hostel</title>
+<link rel="icon" type="image/png" href="assets/favicon.png">
+<link rel="stylesheet" href="theme.css">
 <link rel="stylesheet" href="portal.css">
 </head>
 <body>
 
-<!-- LOGIN -->
-<main id="viewLogin" class="center hidden">
-  <form id="loginForm" class="card">
-    <h1>Portal do Hostel</h1>
-    <p class="muted">Entre com seu e-mail e senha.</p>
-    <label>E-mail<input id="loginEmail" type="email" autocomplete="username" required></label>
-    <label>Senha<input id="loginPass" type="password" autocomplete="current-password" required></label>
-    <button class="btn" id="loginBtn" type="submit">Entrar</button>
-    <p id="loginMsg" class="msg" role="alert"></p>
-    <p class="muted small switch">Ainda não tem conta? <a href="#" id="goSignup">Criar conta</a></p>
-  </form>
+<!-- ENTRADA -->
+<main id="viewLogin" class="login hidden">
+  <div class="login-inner">
+    <div class="brand">
+      <img class="logo" src="assets/logo.png" alt="São Hostel">
+      <p class="tagline">Portal de gestão · São Roque/SP</p>
+    </div>
 
-  <form id="signupForm" class="card hidden">
-    <h1>Criar conta</h1>
-    <p class="muted">Depois de criar, o administrador precisa liberar o seu acesso.</p>
-    <label>Seu nome<input id="signupNome" type="text" autocomplete="name" maxlength="80" required></label>
-    <label>E-mail<input id="signupEmail" type="email" autocomplete="username" required></label>
-    <label>Senha (mínimo 8 caracteres)<input id="signupPass" type="password" autocomplete="new-password" minlength="8" required></label>
-    <label>Repita a senha<input id="signupPass2" type="password" autocomplete="new-password" minlength="8" required></label>
-    <button class="btn" id="signupBtn" type="submit">Criar conta</button>
-    <p id="signupMsg" class="msg" role="alert"></p>
-    <p class="muted small switch">Já tem conta? <a href="#" id="goLogin">Entrar</a></p>
-  </form>
+    <form id="loginForm" class="card">
+      <h1>Bem-vindo</h1>
+      <p class="muted">Entre com seu e-mail e senha.</p>
+      <label>E-mail<input id="loginEmail" type="email" autocomplete="username" required></label>
+      <label>Senha<input id="loginPass" type="password" autocomplete="current-password" required></label>
+      <button class="btn block" id="loginBtn" type="submit">Entrar</button>
+      <p id="loginMsg" class="msg" role="alert"></p>
+      <p class="muted small switch">Ainda não tem conta? <a href="#" id="goSignup">Criar conta</a></p>
+    </form>
+
+    <form id="signupForm" class="card hidden">
+      <h1>Criar conta</h1>
+      <p class="muted">Depois de criar, o administrador precisa liberar o seu acesso.</p>
+      <label>Seu nome<input id="signupNome" type="text" autocomplete="name" maxlength="80" required></label>
+      <label>E-mail<input id="signupEmail" type="email" autocomplete="username" required></label>
+      <label>Senha (mínimo 8 caracteres)<input id="signupPass" type="password" autocomplete="new-password" minlength="8" required></label>
+      <label>Repita a senha<input id="signupPass2" type="password" autocomplete="new-password" minlength="8" required></label>
+      <button class="btn block" id="signupBtn" type="submit">Criar conta</button>
+      <p id="signupMsg" class="msg" role="alert"></p>
+      <p class="muted small switch">Já tem conta? <a href="#" id="goLogin">Entrar</a></p>
+    </form>
+  </div>
 </main>
 
 <!-- MENU -->
 <div id="viewHome" class="hidden">
   <header class="top">
-    <strong>Portal do Hostel</strong>
+    <img class="logo sm" src="assets/logo.png" alt="São Hostel">
     <span class="spacer"></span>
-    <span id="whoami" class="muted small"></span>
     <button class="btn ghost" id="btnPass" type="button">Trocar senha</button>
     <button class="btn ghost" id="btnLogout" type="button">Sair</button>
   </header>
   <main class="wrap">
+    <section class="hello">
+      <h1 id="helloName">Olá</h1>
+      <p id="whoami" class="muted"></p>
+    </section>
     <p id="homeMsg" class="msg"></p>
     <div id="cards" class="grid"></div>
   </main>
@@ -51,9 +64,9 @@
 
 <!-- MÓDULO -->
 <div id="viewModule" class="hidden module-view">
-  <header class="top">
+  <header class="top compact">
     <button class="btn ghost" id="btnBack" type="button">← Menu</button>
-    <strong id="modTitle"></strong>
+    <strong id="modTitle" class="modtitle"></strong>
     <span class="spacer"></span>
     <span id="saveStatus" class="status" aria-live="polite"></span>
   </header>
@@ -62,18 +75,20 @@
 
 <!-- ADMIN -->
 <div id="viewAdmin" class="hidden">
-  <header class="top">
+  <header class="top compact">
     <button class="btn ghost" id="btnBackAdmin" type="button">← Menu</button>
-    <strong>Usuários e acessos</strong>
+    <strong class="modtitle">Usuários e acessos</strong>
   </header>
   <main class="wrap">
-    <div class="card wide">
-      <p class="muted">Para criar uma pessoa nova: no painel do Supabase, vá em <b>Authentication → Users → Add user</b> (e-mail + senha, marque “Auto Confirm User”). Ela aparece aqui como <b>pendente</b>; escolha o acesso e salve.</p>
+    <div class="panel">
+      <p class="muted">Para criar uma pessoa direto no Supabase: <b>Authentication → Users → Add user</b> (marque “Auto Confirm User”). Quem se cadastra pelo portal aparece aqui como <b>pendente</b>; escolha o acesso e salve.</p>
       <p id="adminMsg" class="msg"></p>
-      <table>
-        <thead><tr><th>Nome</th><th>E-mail</th><th>Acesso</th><th></th></tr></thead>
-        <tbody id="userRows"></tbody>
-      </table>
+      <div class="tablewrap">
+        <table>
+          <thead><tr><th>Nome</th><th>E-mail</th><th>Acesso</th><th></th></tr></thead>
+          <tbody id="userRows"></tbody>
+        </table>
+      </div>
     </div>
   </main>
 </div>

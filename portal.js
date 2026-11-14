@@ -3,11 +3,18 @@
 
   // ---- Módulos disponíveis. "roles" só controla o que aparece no menu;
   // ---- quem realmente protege os dados é o banco (RLS, ver supabase/schema.sql).
+  var ICONS = {
+    cama: '<svg viewBox="0 0 24 24"><path d="M3 19V6"/><path d="M3 14h18v5"/><path d="M21 14v-2.5A2.5 2.5 0 0 0 18.5 9H11v5"/><circle cx="7" cy="11" r="1.8"/></svg>',
+    lavanderia: '<svg viewBox="0 0 24 24"><rect x="4" y="3" width="16" height="18" rx="2.5"/><circle cx="12" cy="13.5" r="4"/><path d="M8 6.5h.01M11 6.5h.01"/></svg>',
+    calendario: '<svg viewBox="0 0 24 24"><rect x="3.5" y="5" width="17" height="15" rx="2.5"/><path d="M3.5 10h17M8 3v4M16 3v4"/></svg>',
+    custos: '<svg viewBox="0 0 24 24"><path d="M4 20V11M10 20V4M16 20v-6M22 20H2"/></svg>',
+    usuarios: '<svg viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.2"/><path d="M3 20c.5-3.5 3-5 6-5s5.5 1.5 6 5"/><path d="M16.5 5.2a3 3 0 0 1 0 5.6M18 15.3c1.8.6 2.9 2.1 3.2 4.7"/></svg>'
+  };
   var MODULES = [
-    { id: 'rotatividade', name: 'Rotatividade (camareira)', desc: 'Limpeza por cama e por dia.', path: 'modules/rotatividade/index.html', roles: ['admin', 'camareira'] },
-    { id: 'lsr', name: 'Lavanderia', desc: 'Produção, inventário, qualidade e rotatividade do enxoval (SR e MK).', path: 'modules/lsr/index.html', roles: ['admin', 'lavanderia'] },
-    { id: 'hostel', name: 'Reservas — Hostel MK', desc: 'Reservas, calendário e mapa de ocupação.', path: 'modules/hostel/index.html', roles: ['admin'] },
-    { id: 'gestao', name: 'Gestão de custos', desc: 'Custos fixos e variáveis e custo por quarto.', path: 'modules/gestao/index.html', roles: ['admin'] }
+    { id: 'rotatividade', icon: 'cama', name: 'Rotatividade (camareira)', desc: 'Limpeza por cama e por dia.', path: 'modules/rotatividade/index.html', roles: ['admin', 'camareira'] },
+    { id: 'lsr', icon: 'lavanderia', name: 'Lavanderia', desc: 'Produção, inventário, qualidade e rotatividade do enxoval (SR e MK).', path: 'modules/lsr/index.html', roles: ['admin', 'lavanderia'] },
+    { id: 'hostel', icon: 'calendario', name: 'Reservas — Hostel MK', desc: 'Reservas, calendário e mapa de ocupação.', path: 'modules/hostel/index.html', roles: ['admin'] },
+    { id: 'gestao', icon: 'custos', name: 'Gestão de custos', desc: 'Custos fixos e variáveis e custo por quarto.', path: 'modules/gestao/index.html', roles: ['admin'] }
   ];
   var ROLE_LABEL = { admin: 'Acesso geral (admin)', lavanderia: 'Só lavanderia', camareira: 'Só camareira', pendente: 'Pendente (sem acesso)' };
 
@@ -142,11 +149,13 @@
 
   function showHome() {
     current = null;
-    $('whoami').textContent = (me.nome || me.email) + ' · ' + ROLE_LABEL[me.role];
+    var first = String(me.nome || me.email || '').trim().split(/\s+/)[0];
+    $('helloName').textContent = 'Olá, ' + first;
+    $('whoami').textContent = ROLE_LABEL[me.role];
     var cards = $('cards'); cards.innerHTML = '';
     var list = MODULES.filter(function (m) { return m.roles.indexOf(me.role) >= 0; });
-    list.forEach(function (m) { cards.appendChild(tile(m.name, m.desc, function () { openModule(m); })); });
-    if (me.role === 'admin') cards.appendChild(tile('Usuários e acessos', 'Definir quem acessa o quê.', openAdmin));
+    list.forEach(function (m) { cards.appendChild(tile(m.icon, m.name, m.desc, function () { openModule(m); })); });
+    if (me.role === 'admin') cards.appendChild(tile('usuarios', 'Usuários e acessos', 'Liberar cadastros e definir quem acessa o quê.', openAdmin));
     setMsg($('homeMsg'), me.role === 'pendente' ? 'Seu acesso ainda não foi liberado. Peça ao administrador.' : '');
     show('viewHome');
     if (me.role === 'admin') {
@@ -156,11 +165,14 @@
     }
   }
 
-  function tile(title, desc, onClick) {
+  function tile(icon, title, desc, onClick) {
     var b = document.createElement('button'); b.type = 'button'; b.className = 'tile';
+    var i = document.createElement('div'); i.className = 'ico'; i.innerHTML = ICONS[icon] || '';
     var h = document.createElement('h2'); h.textContent = title;
     var p = document.createElement('p'); p.textContent = desc;
-    b.appendChild(h); b.appendChild(p); b.addEventListener('click', onClick);
+    var g = document.createElement('span'); g.className = 'go'; g.textContent = 'Abrir →';
+    b.appendChild(i); b.appendChild(h); b.appendChild(p); b.appendChild(g);
+    b.addEventListener('click', onClick);
     return b;
   }
 

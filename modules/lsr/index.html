@@ -4,12 +4,13 @@
 <script src="../../shim.js"></script>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="theme-color" content="#172f4f">
+<meta name="theme-color" content="#2e4125">
 <title>Lavanderia do Hostel | Unidades SR e MK</title>
 <link rel="stylesheet" href="style.css">
+<link rel="stylesheet" href="../../theme.css">
 </head>
 <body>
-<header><div class="inner headrow"><div><h1>Lavanderia do Hostel</h1><p>Unidades SR e MK · Enxoval, produtividade, capacidade e previsões</p></div><div class="saved" id="saveState">● Dados locais</div></div></header>
+<header><div class="inner headrow"><div><h1>Lavanderia do Hostel</h1><p>Unidades SR e MK · Enxoval, produtividade, capacidade e previsões</p></div><div class="saved" id="saveState">● Dados na nuvem</div></div></header>
 <main>
 <nav class="tabs">
 <button class="tab active" data-tab="painel">Painel</button><button class="tab" data-tab="registro">Produção diária</button><button class="tab" data-tab="estoque">Inventário</button><button class="tab" data-tab="rotatividade">Rotatividade</button><button class="tab" data-tab="qualidade">Qualidade</button><button class="tab" data-tab="previsao">Previsões</button><button class="tab" data-tab="config">Configuração</button><button class="tab" data-tab="dados">Backup e relatórios</button>
@@ -164,7 +165,7 @@
 <div class="card"><h2>Backup completo</h2><p class="muted small">Exporta configurações, inventários e histórico em JSON. Para transferir para outro aparelho, exporte aqui e importe no outro celular.</p><div class="actions"><button class="btn" onclick="exportJSON()">Exportar backup JSON</button><button class="btn secondary" onclick="document.getElementById('importFile').click()">Importar backup JSON</button><input id="importFile" type="file" accept=".json,application/json" class="hidden"></div><p class="small muted">Importar substitui os dados atuais deste navegador. Faça backup antes, se precisar conservar os dados existentes.</p></div>
 <div class="card"><h2>Exportações em CSV</h2><p class="muted small">Produção, inventário, rotatividade e qualidade são exportados em CSV. Para restaurar os dados completos, use backup JSON.</p><div class="actions"><button class="btn" onclick="exportCSV()">Exportar produção CSV</button><button class="btn secondary" onclick="exportStockCSV()">Exportar inventário CSV</button><button class="btn secondary" onclick="exportRotationCSV()">Exportar rotatividade CSV</button><button class="btn secondary" onclick="exportQualityCSV()">Exportar qualidade CSV</button><button class="btn secondary" onclick="exportAnalysisCSV()">Exportar resumo de análise CSV</button></div></div>
 </div>
-<div class="card"><h2>Privacidade e armazenamento</h2><div class="notice neutral">Os dados ficam neste navegador, neste aparelho. O GitHub Pages publica o aplicativo, mas não sincroniza os dados entre celulares. Exporte backups regularmente e antes de limpar os dados do navegador.</div><div id="dataStats"></div><div class="actions"><button class="btn danger" onclick="resetData()">Apagar todos os dados deste aparelho</button></div></div>
+<div class="card"><h2>Privacidade e armazenamento</h2><div class="notice neutral">Os dados ficam salvos na nuvem do portal e aparecem em qualquer aparelho de quem tem acesso à Lavanderia. Exporte um backup de vez em quando.</div><div id="dataStats"></div><div class="actions"><button class="btn danger" onclick="resetData()">Apagar todos os dados deste aparelho</button></div></div>
 </section>
 <div class="footer">Lavanderia do Hostel · Unidades SR e MK · Desenvolvido por Thiago Fonseca · Versão 8</div>
 </main>

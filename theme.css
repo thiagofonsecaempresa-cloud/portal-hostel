@@ -1,0 +1,17 @@
+/* Tema São Hostel — compartilhado pelo portal e pelos módulos.
+   Cores aproximadas do perfil @sao.hostel (verde-floresta, creme, luz âmbar, madeira). */
+@font-face{font-family:'Playfair Display';font-weight:600;font-style:normal;font-display:swap;src:url('fonts/playfair-display-latin-600-normal.woff2') format('woff2')}
+@font-face{font-family:'Playfair Display';font-weight:700;font-style:normal;font-display:swap;src:url('fonts/playfair-display-latin-700-normal.woff2') format('woff2')}
+@font-face{font-family:'Inter';font-weight:400;font-style:normal;font-display:swap;src:url('fonts/inter-latin-400-normal.woff2') format('woff2')}
+@font-face{font-family:'Inter';font-weight:500;font-style:normal;font-display:swap;src:url('fonts/inter-latin-500-normal.woff2') format('woff2')}
+@font-face{font-family:'Inter';font-weight:600;font-style:normal;font-display:swap;src:url('fonts/inter-latin-600-normal.woff2') format('woff2')}
+@font-face{font-family:'Inter';font-weight:700;font-style:normal;font-display:swap;src:url('fonts/inter-latin-700-normal.woff2') format('woff2')}
+
+:root{
+  --sh-verde:#2f4a24; --sh-verde-esc:#22381a; --sh-verde-claro:#6f9446; --sh-verde-palido:#e8eedd;
+  --sh-creme:#f6f1e6; --sh-areia:#ddd6c3; --sh-ambar:#c8923a; --sh-madeira:#8a5a34; --sh-tinta:#1f2a1a;
+}
+html{-webkit-text-size-adjust:100%}
+body{font-family:'Inter',system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+button,input,select,textarea{font-family:inherit}
+h1,h2,h3{font-family:'Playfair Display',Georgia,'Times New Roman',serif;font-weight:600;letter-spacing:.1px}

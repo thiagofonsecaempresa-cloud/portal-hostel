@@ -4,16 +4,16 @@
 <script src="../../shim.js"></script>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="theme-color" content="#163d78">
+  <meta name="theme-color" content="#3f602f">
   <meta name="description" content="Gestão de custos e estimativa de custo por diária para hostel.">
   <title>Gestão do Hostel</title>
   <link rel="manifest" href="manifest.json">
   <link rel="icon" href="icon.svg" type="image/svg+xml">
   <style>
-    :root{color-scheme:light;--bg:#f2f6fc;--card:#fff;--ink:#1d2d45;--muted:#65748a;--green:#2457a7;--green-soft:#e4edfc;--line:#d7e1f0;--warn:#fff7e7;--warn-ink:#6d4d18;--shadow:0 8px 24px rgba(28,62,112,.07)}
+    :root{color-scheme:light;--bg:#f6f9f5;--card:#fff;--ink:#2e3b27;--muted:#74816e;--green:#5b8645;--green-soft:#eef6ea;--line:#e1eadd;--warn:#fff7e7;--warn-ink:#6d4d18;--shadow:0 8px 24px rgba(63,91,49,.07)}
     *{box-sizing:border-box}
     body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.45 -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
-    header{background:linear-gradient(135deg,#163d78,#2875c7);color:#fff;padding:28px 18px 30px}
+    header{background:linear-gradient(135deg,#3f602f,#6a9f50);color:#fff;padding:28px 18px 30px}
     .wrap{max-width:960px;margin:auto}
     .eyebrow{text-transform:uppercase;letter-spacing:.12em;font-size:.75rem;font-weight:800;opacity:.8}
     h1{font-size:clamp(1.9rem,5vw,2.5rem);line-height:1.1;margin:8px 0}
@@ -25,11 +25,11 @@
     .grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:13px}
     label{display:block;font-size:.88rem;font-weight:700;margin-bottom:6px}
     input,select{font:inherit;color:var(--ink);background:#fff;border:1px solid #cbd7ce;border-radius:10px;padding:11px 12px;width:100%;min-width:0}
-    input:focus,select:focus,button:focus-visible{outline:3px solid #c7dcff;outline-offset:2px;border-color:var(--green)}
+    input:focus,select:focus,button:focus-visible{outline:3px solid #def1d5;outline-offset:2px;border-color:var(--green)}
     .hint{font-size:.8rem;color:var(--muted)}
     .section-head{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:18px 0 10px}
     .cost-list{display:grid;gap:9px}
-    .cost-row{display:grid;grid-template-columns:minmax(0,1fr) minmax(110px,.75fr) auto;gap:9px;align-items:center;padding:10px;background:#f8faff;border:1px solid var(--line);border-radius:12px}
+    .cost-row{display:grid;grid-template-columns:minmax(0,1fr) minmax(110px,.75fr) auto;gap:9px;align-items:center;padding:10px;background:#fbfdfa;border:1px solid var(--line);border-radius:12px}
     .cost-name{font-weight:700;font-size:.9rem;overflow-wrap:anywhere}
     .cost-type{display:block;color:var(--muted);font-size:.75rem;font-weight:400}
     .cost-row input{padding:9px 10px}
@@ -38,10 +38,10 @@
     .actions{display:flex;gap:9px;flex-wrap:wrap;margin-top:13px}
     .actions button{flex:0 0 auto}
     .results{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:11px}
-    .metric{background:#f5f8ff;border:1px solid var(--line);border-radius:14px;padding:15px;min-width:0}
+    .metric{background:#f9fcf8;border:1px solid var(--line);border-radius:14px;padding:15px;min-width:0}
     .metric .label{font-size:.8rem;color:var(--muted);font-weight:700}
     .metric .value{font-size:clamp(1.15rem,3.7vw,1.75rem);font-weight:850;letter-spacing:-.03em;margin-top:5px;overflow-wrap:anywhere}
-    .metric.featured{background:var(--green-soft);border-color:#b9cdf0}
+    .metric.featured{background:var(--green-soft);border-color:#d0e2c7}
     .note{background:var(--warn);border:1px solid #f0dfb9;color:var(--warn-ink);padding:12px 14px;border-radius:12px;font-size:.88rem;margin-top:13px}
     .summary-line{display:flex;justify-content:space-between;gap:12px;padding:9px 0;border-bottom:1px solid var(--line)}
     .summary-line:last-child{border:0}.summary-line strong{text-align:right}
@@ -50,6 +50,7 @@
     #importFile{display:none}
     @media(max-width:640px){main{padding:12px}.card{padding:16px}.grid{grid-template-columns:1fr}.results{grid-template-columns:1fr}.cost-row{grid-template-columns:minmax(0,1fr) minmax(100px,.7fr) auto;gap:7px}.cost-row input{font-size:.92rem;padding:9px 7px}.actions button{flex:1 1 100%}.section-head{align-items:flex-start;flex-direction:column;gap:4px}}
   </style>
+<link rel="stylesheet" href="../../theme.css">
 </head>
 <body>
 <header><div class="wrap">
@@ -119,7 +120,7 @@
 
   <section class="card">
     <h2>4. Backup e dados</h2>
-    <p class="sub">Os dados são salvos neste navegador. Exporte um backup regularmente para não depender de um único aparelho.</p>
+    <p class="sub">Os dados são salvos na nuvem do portal. Exporte um backup de vez em quando.</p>
     <div class="actions">
       <button type="button" class="primary" id="exportJson">Baixar backup JSON</button>
       <button type="button" class="secondary" id="importBtn">Importar backup JSON</button>
@@ -127,10 +128,10 @@
       <button type="button" class="quiet" id="resetBtn">Restaurar exemplo</button>
     </div>
     <input id="importFile" type="file" accept=".json,application/json">
-    <p id="saveStatus" class="hint" role="status" aria-live="polite">Salvamento automático ativado neste navegador.</p>
+    <p id="saveStatus" class="hint" role="status" aria-live="polite">Salvamento automático ativado (nuvem).</p>
   </section>
 </main>
-<footer>Gestão do Hostel · desenvolvido por Thiago Fonseca · versão 2.1 · Os dados ficam no navegador deste aparelho, não são sincronizados automaticamente entre dispositivos.</footer>
+<footer>Gestão do Hostel · desenvolvido por Thiago Fonseca · versão 2.1 · Os dados ficam salvos na nuvem do portal.</footer>
 <script>
 (() => {
   'use strict';
@@ -232,7 +233,7 @@
       };
       localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
       localStorage.setItem(PRESETS_KEY, JSON.stringify(customPresets));
-      $('saveStatus').textContent = 'Salvo automaticamente neste navegador.';
+      $('saveStatus').textContent = 'Salvo automaticamente na nuvem.';
     } catch (err) {
       $('saveStatus').textContent = 'O navegador bloqueou o salvamento local. Baixe um backup JSON para guardar os dados.';
     }
@@ -437,7 +438,7 @@
     }
   }
   function reset() {
-    if (!confirm('Restaurar o exemplo inicial? Isso substitui os valores atuais salvos neste navegador.')) return;
+    if (!confirm('Restaurar o exemplo inicial? Isso substitui os valores atuais salvos na nuvem (para todos os usuários).')) return;
     costs = defaults.map(c=>({...c}));
     $('rooms').value = '10'; $('occupancy').value = '60'; $('days').value = '30'; $('currency').value = 'BRL';
     renderCosts(); calculate(); message('Exemplo inicial restaurado.');
