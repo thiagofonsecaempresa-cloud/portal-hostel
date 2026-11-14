@@ -112,3 +112,7 @@ grant update (role, nome) on public.profiles to authenticated;
 -- DEPOIS de criar o seu usuário em Authentication > Users, torne-se admin:
 --   update public.profiles set role = 'admin' where email = 'SEU_EMAIL_AQUI';
 -- =====================================================================
+
+
+-- Migração: papel de bloqueio (rode uma vez no SQL Editor)
+alter type public.app_role add value if not exists 'bloqueado';

@@ -17,7 +17,7 @@
     { id: 'hostel', title: 'Reservas — Hostel MK', icon: 'calendario', name: 'Reservas — Hostel MK', desc: 'Reservas, calendário e mapa de ocupação.', path: 'modules/hostel/index.html', roles: ['admin'] },
     { id: 'gestao', title: 'Gestão do Hostel', icon: 'custos', name: 'Gestão de custos', desc: 'Custos fixos e variáveis e custo por quarto.', path: 'modules/gestao/index.html', roles: ['admin'] }
   ];
-  var ROLE_LABEL = { admin: 'Acesso geral (admin)', lavanderia: 'Só lavanderia', camareira: 'Só camareira', pendente: 'Pendente (sem acesso)' };
+  var ROLE_LABEL = { admin: 'Acesso geral (admin)', lavanderia: 'Só lavanderia', camareira: 'Só camareira', pendente: 'Pendente (sem acesso)', bloqueado: 'Bloqueado (sem acesso)' };
 
   var $ = function (id) { return document.getElementById(id); };
   var cfg = window.PORTAL_CONFIG || {};
@@ -161,7 +161,7 @@
       var last = ''; try { last = localStorage.getItem('portal_ultimo_backup') || ''; } catch (e) {}
       cards.appendChild(tile('backup', 'Backup geral', last ? 'Baixa tudo de todos os módulos. Último backup: ' + last + '.' : 'Baixa tudo de todos os módulos num só arquivo. Faça de vez em quando.', downloadBackup));
     }
-    setMsg($('homeMsg'), me.role === 'pendente' ? 'Seu acesso ainda não foi liberado. Peça ao administrador.' : '');
+    setMsg($('homeMsg'), me.role === 'bloqueado' ? 'Seu acesso foi bloqueado. Fale com o administrador.' : me.role === 'pendente' ? 'Seu acesso ainda não foi liberado. Peça ao administrador.' : '');
     show('viewHome');
     if (me.role === 'admin') {
       sb.from('profiles').select('id', { count: 'exact', head: true }).eq('role', 'pendente').then(function (r) {
@@ -273,6 +273,22 @@
         if (u.id === me.id) { me.role = sel.value; me.nome = nomeNovo; }
       });
       tdB.appendChild(btn);
+      if (u.id !== me.id) {
+        var bb = document.createElement('button'); bb.type = 'button'; bb.className = 'btn ghost small'; bb.style.marginLeft = '6px';
+        bb.textContent = u.role === 'bloqueado' ? 'Desbloquear' : 'Bloquear';
+        bb.addEventListener('click', async function () {
+          var bloquear = u.role !== 'bloqueado';
+          if (bloquear && !confirm('Bloquear ' + (u.nome || u.email) + '? A pessoa deixa de ver qualquer módulo.')) return;
+          bb.disabled = true;
+          var novo = bloquear ? 'bloqueado' : 'pendente';
+          var rr = await sb.from('profiles').update({ role: novo }).eq('id', u.id);
+          bb.disabled = false;
+          if (rr.error) { setMsg($('adminMsg'), 'Erro ao salvar: ' + rr.error.message); return; }
+          await openAdmin();
+          setMsg($('adminMsg'), (u.nome || u.email) + (bloquear ? ' foi bloqueado(a).' : ' voltou para pendente.'), true);
+        });
+        tdB.appendChild(bb);
+      }
       [tdN, tdE, tdR, tdB].forEach(function (td) { tr.appendChild(td); });
       tb.appendChild(tr);
     });
