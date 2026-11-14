@@ -116,3 +116,56 @@ grant update (role, nome) on public.profiles to authenticated;
 
 -- Migração: papel de bloqueio (rode uma vez no SQL Editor)
 alter type public.app_role add value if not exists 'bloqueado';
+
+
+-- =====================================================================
+-- Migração: papéis "gerente" e "gerente_sem_lavanderia" (14/11/2026)
+-- Rode no SQL Editor do Supabase em DOIS passos (um de cada vez):
+-- =====================================================================
+
+-- PASSO 1 (rode sozinho, depois o passo 2)
+alter type public.app_role add value if not exists 'gerente';
+alter type public.app_role add value if not exists 'gerente_sem_lavanderia';
+
+-- PASSO 2
+-- Ver: gerente vê tudo (Lavanderia só leitura); gerente_sem_lavanderia vê tudo menos a Lavanderia
+create or replace function public.can_access(mod text)
+returns boolean
+language sql stable security definer set search_path = ''
+as $$
+  select case public.my_role()
+    when 'admin'                  then true
+    when 'gerente'                then mod in ('rotatividade', 'lsr', 'hostel', 'gestao', 'financeiro')
+    when 'gerente_sem_lavanderia' then mod in ('rotatividade', 'hostel', 'gestao', 'financeiro')
+    when 'lavanderia'             then mod = 'lsr'
+    when 'camareira'              then mod = 'rotatividade'
+    else false
+  end
+$$;
+
+-- Gravar: ninguém além de admin e lavanderia grava na Lavanderia
+create or replace function public.can_write(mod text)
+returns boolean
+language sql stable security definer set search_path = ''
+as $$
+  select case public.my_role()
+    when 'admin'                  then true
+    when 'gerente'                then mod in ('rotatividade', 'hostel', 'gestao', 'financeiro')
+    when 'gerente_sem_lavanderia' then mod in ('rotatividade', 'hostel', 'gestao', 'financeiro')
+    when 'lavanderia'             then mod = 'lsr'
+    when 'camareira'              then mod = 'rotatividade'
+    else false
+  end
+$$;
+
+drop policy if exists kv_insert on public.kv_store;
+create policy kv_insert on public.kv_store for insert to authenticated
+  with check (public.can_write(module));
+
+drop policy if exists kv_update on public.kv_store;
+create policy kv_update on public.kv_store for update to authenticated
+  using (public.can_write(module)) with check (public.can_write(module));
+
+drop policy if exists kv_delete on public.kv_store;
+create policy kv_delete on public.kv_store for delete to authenticated
+  using (public.can_write(module));

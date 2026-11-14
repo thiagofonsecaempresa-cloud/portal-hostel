@@ -12,13 +12,16 @@
     usuarios: '<svg viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.2"/><path d="M3 20c.5-3.5 3-5 6-5s5.5 1.5 6 5"/><path d="M16.5 5.2a3 3 0 0 1 0 5.6M18 15.3c1.8.6 2.9 2.1 3.2 4.7"/></svg>'
   };
   var MODULES = [
-    { id: 'rotatividade', title: 'Rotatividade do Hostel', icon: 'cama', name: 'Rotatividade (camareira)', desc: 'Limpeza por cama e por dia.', path: 'modules/rotatividade/index.html', roles: ['admin', 'camareira'] },
-    { id: 'lsr', title: 'Lavanderia do Hostel', icon: 'lavanderia', name: 'Lavanderia', desc: 'Produção, inventário, qualidade e rotatividade do enxoval (SR e MK).', path: 'modules/lsr/index.html', roles: ['admin', 'lavanderia'] },
-    { id: 'hostel', title: 'Reservas — Hostel MK', icon: 'calendario', name: 'Reservas — Hostel MK', desc: 'Reservas, calendário e mapa de ocupação.', path: 'modules/hostel/index.html', roles: ['admin'] },
-    { id: 'gestao', title: 'Gestão do Hostel', icon: 'custos', name: 'Gestão de custos', desc: 'Custos fixos e variáveis e custo por quarto.', path: 'modules/gestao/index.html', roles: ['admin'] },
-    { id: 'financeiro', title: 'Financeiro do Hostel', icon: 'custos', name: 'Financeiro', desc: 'Receitas e despesas por unidade (SR e MK), gráficos e projeção.', path: 'modules/financeiro/index.html', roles: ['admin'] }
+    { id: 'rotatividade', title: 'Rotatividade do Hostel', icon: 'cama', name: 'Rotatividade (camareira)', desc: 'Limpeza por cama e por dia.', path: 'modules/rotatividade/index.html', roles: ['admin', 'gerente', 'gerente_sem_lavanderia', 'camareira'] },
+    { id: 'lsr', title: 'Lavanderia do Hostel', icon: 'lavanderia', name: 'Lavanderia', desc: 'Produção, inventário, qualidade e rotatividade do enxoval (SR e MK).', path: 'modules/lsr/index.html', roles: ['admin', 'gerente', 'lavanderia'] },
+    { id: 'hostel', title: 'Reservas — Hostel MK', icon: 'calendario', name: 'Reservas — Hostel MK', desc: 'Reservas, calendário e mapa de ocupação.', path: 'modules/hostel/index.html', roles: ['admin', 'gerente', 'gerente_sem_lavanderia'] },
+    { id: 'gestao', title: 'Gestão do Hostel', icon: 'custos', name: 'Gestão de custos', desc: 'Custos fixos e variáveis e custo por quarto.', path: 'modules/gestao/index.html', roles: ['admin', 'gerente', 'gerente_sem_lavanderia'] },
+    { id: 'financeiro', title: 'Financeiro do Hostel', icon: 'custos', name: 'Financeiro', desc: 'Receitas e despesas por unidade (SR e MK), gráficos e projeção.', path: 'modules/financeiro/index.html', roles: ['admin', 'gerente', 'gerente_sem_lavanderia'] }
   ];
-  var ROLE_LABEL = { admin: 'Acesso geral (admin)', lavanderia: 'Só lavanderia', camareira: 'Só camareira', pendente: 'Pendente (sem acesso)', bloqueado: 'Bloqueado (sem acesso)' };
+  var ROLE_LABEL = { admin: 'Acesso geral (admin)', gerente: 'Gerente (tudo; Lavanderia só leitura)', gerente_sem_lavanderia: 'Gerente sem Lavanderia', lavanderia: 'Só lavanderia', camareira: 'Só camareira', pendente: 'Pendente (sem acesso)', bloqueado: 'Bloqueado (sem acesso)' };
+
+  // Gerente (acesso geral sem ser admin) só consulta a Lavanderia; o banco também bloqueia a gravação.
+  function isReadOnly(role, modId) { return role === 'gerente' && modId === 'lsr'; }
 
   var $ = function (id) { return document.getElementById(id); };
   var cfg = window.PORTAL_CONFIG || {};
@@ -40,12 +43,14 @@
     var mod = null;
     var pending = new Map(); // key -> {op:'set', v} | {op:'del'}
     var timer = null, retry = null, flushing = null;
+    var ro = false; // módulo aberto só para leitura
 
     function status(kind, text) {
       var el = $('saveStatus'); el.className = 'status ' + kind; el.textContent = text;
     }
 
     function schedule() {
+      if (ro) { status('saved', 'Somente leitura — não salva'); return; }
       status('saving', 'Salvando…');
       clearTimeout(timer);
       timer = setTimeout(flush, 500);
@@ -88,7 +93,7 @@
     }
 
     return {
-      async load(moduleId) {
+      async load(moduleId, readOnly) {
         var rows = [], from = 0, size = 1000;
         for (;;) {
           var r = await sb.from('kv_store').select('key,value').eq('module', moduleId).order('key').range(from, from + size - 1);
@@ -98,8 +103,8 @@
           from += size;
         }
         cache = new Map(rows.map(function (x) { return [x.key, x.value]; }));
-        pending = new Map(); mod = moduleId;
-        status('saved', 'Nuvem ✓');
+        pending = new Map(); mod = moduleId; ro = !!readOnly;
+        status('saved', ro ? 'Somente leitura' : 'Nuvem ✓');
       },
       async close() {
         clearTimeout(timer);
@@ -110,9 +115,9 @@
       },
       hasPending: function () { return pending.size > 0; },
       get: function (k) { return cache.has(k) ? cache.get(k) : null; },
-      set: function (k, v) { cache.set(k, v); pending.set(k, { op: 'set', v: v }); schedule(); },
-      remove: function (k) { if (cache.has(k) || pending.has(k)) { cache.delete(k); pending.set(k, { op: 'del' }); schedule(); } },
-      clear: function () { Array.from(cache.keys()).forEach(function (k) { pending.set(k, { op: 'del' }); }); cache.clear(); schedule(); },
+      set: function (k, v) { cache.set(k, v); if (!ro) pending.set(k, { op: 'set', v: v }); schedule(); },
+      remove: function (k) { if (cache.has(k) || pending.has(k)) { cache.delete(k); if (!ro) pending.set(k, { op: 'del' }); schedule(); } },
+      clear: function () { if (!ro) Array.from(cache.keys()).forEach(function (k) { pending.set(k, { op: 'del' }); }); cache.clear(); schedule(); },
       keys: function () { return Array.from(cache.keys()); },
       flush: flush
     };
@@ -185,14 +190,14 @@
   async function openModule(m) {
     setMsg($('homeMsg'), 'Carregando…', true);
     try {
-      await store.load(m.id);
+      await store.load(m.id, isReadOnly(me.role, m.id));
     } catch (err) {
       console.error(err);
       setMsg($('homeMsg'), 'Não foi possível carregar os dados. Verifique a conexão e tente de novo.');
       return;
     }
     current = m;
-    window.PORTAL_FLAGS = { canImport: me.role === 'admin' && cfg.ALLOW_IMPORT === true };
+    window.PORTAL_FLAGS = { canImport: me.role === 'admin' && cfg.ALLOW_IMPORT === true, readOnly: isReadOnly(me.role, m.id) };
     $('modTitle').textContent = m.title || m.name;
     $('frame').src = m.path;
     show('viewModule');
