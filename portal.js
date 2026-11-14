@@ -150,7 +150,7 @@
 
   function showHome() {
     current = null;
-    var first = String(me.nome || me.email || '').trim().split(/\s+/)[0];
+    var first = String(me.nome || '').trim().split(/\s+/)[0] || String(me.email || '').split('@')[0];
     $('helloName').textContent = 'Olá, ' + first;
     $('whoami').textContent = ROLE_LABEL[me.role];
     var cards = $('cards'); cards.innerHTML = '';
@@ -252,7 +252,7 @@
     r.data.sort(function (a, b) { return (b.role === 'pendente') - (a.role === 'pendente'); });
     r.data.forEach(function (u) {
       var tr = document.createElement('tr');
-      var tdN = document.createElement('td'); tdN.textContent = u.nome || '';
+      var tdN = document.createElement('td'); var inN = document.createElement('input'); inN.type = 'text'; inN.maxLength = 80; inN.value = u.nome || ''; inN.placeholder = 'Nome'; inN.setAttribute('aria-label', 'Nome'); tdN.appendChild(inN);
       var tdE = document.createElement('td'); tdE.textContent = u.email || '';
       var tdR = document.createElement('td'); var sel = document.createElement('select');
       Object.keys(ROLE_LABEL).forEach(function (k) {
@@ -264,11 +264,13 @@
       btn.addEventListener('click', async function () {
         if (u.id === me.id && sel.value !== 'admin' && !confirm('Você vai tirar o seu próprio acesso de administrador. Continuar?')) return;
         btn.disabled = true;
-        var up = await sb.from('profiles').update({ role: sel.value }).eq('id', u.id);
+        var nomeNovo = inN.value.trim();
+        var up = await sb.from('profiles').update({ role: sel.value, nome: nomeNovo }).eq('id', u.id);
         btn.disabled = false;
         if (up.error) { setMsg($('adminMsg'), 'Erro ao salvar: ' + up.error.message); return; }
+        u.nome = nomeNovo;
         setMsg($('adminMsg'), 'Acesso de ' + (u.nome || u.email) + ' atualizado.', true);
-        if (u.id === me.id) { me.role = sel.value; }
+        if (u.id === me.id) { me.role = sel.value; me.nome = nomeNovo; }
       });
       tdB.appendChild(btn);
       [tdN, tdE, tdR, tdB].forEach(function (td) { tr.appendChild(td); });
@@ -282,6 +284,11 @@
   $('loginForm').addEventListener('submit', async function (e) {
     e.preventDefault();
     var btn = $('loginBtn'); btn.disabled = true; setMsg($('loginMsg'), '');
+    try {
+      var k = $('loginKeep').checked;
+      localStorage.setItem('portal_keep', k ? '1' : '0');
+      if (k) localStorage.setItem('portal_email', $('loginEmail').value.trim()); else localStorage.removeItem('portal_email');
+    } catch (e) {}
     var r = await sb.auth.signInWithPassword({ email: $('loginEmail').value.trim(), password: $('loginPass').value });
     btn.disabled = false;
     if (r.error) { setMsg($('loginMsg'), 'E-mail ou senha incorretos.'); return; }
@@ -299,7 +306,7 @@
 
   $('signupForm').addEventListener('submit', async function (e) {
     e.preventDefault();
-    var nome = $('signupNome').value.trim(), email = $('signupEmail').value.trim();
+    var nome = ($('signupNome').value.trim().split(/\s+/)[0] + ' ' + $('signupSobrenome').value.trim()).trim(), email = $('signupEmail').value.trim();
     var p1 = $('signupPass').value, p2 = $('signupPass2').value, msg = $('signupMsg');
     if (p1.length < 8) { setMsg(msg, 'A senha precisa ter pelo menos 8 caracteres.'); return; }
     if (p1 !== p2) { setMsg(msg, 'As senhas não são iguais.'); return; }
@@ -341,7 +348,19 @@
       setMsg($('loginMsg'), 'Portal ainda não configurado: preencha o config.js com os dados do Supabase.');
       return;
     }
-    sb = window.supabase.createClient(cfg.SUPABASE_URL, cfg.SUPABASE_ANON_KEY);
+    var keep = function () { try { return localStorage.getItem('portal_keep') !== '0'; } catch (e) { return true; } };
+    var pick = function () { return keep() ? localStorage : sessionStorage; };
+    sb = window.supabase.createClient(cfg.SUPABASE_URL, cfg.SUPABASE_ANON_KEY, {
+      auth: { storage: {
+        getItem: function (k) { return pick().getItem(k); },
+        setItem: function (k, v) { pick().setItem(k, v); },
+        removeItem: function (k) { localStorage.removeItem(k); sessionStorage.removeItem(k); }
+      } }
+    });
+    try {
+      $('loginKeep').checked = keep();
+      var em = localStorage.getItem('portal_email'); if (em && keep()) $('loginEmail').value = em;
+    } catch (e) {}
     if (cfg.ALLOW_SIGNUP === false) { document.querySelectorAll('.switch').forEach(function (el) { el.classList.add('hidden'); }); }
     sb.auth.onAuthStateChange(function (ev) {
       if (ev === 'SIGNED_OUT') { me = null; show('viewLogin'); }

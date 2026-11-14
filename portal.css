@@ -73,3 +73,6 @@ td select{margin:0;padding:8px 9px}
 
 .top.compact{flex-wrap:nowrap}.top.compact .modtitle{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}.top.compact .btn{flex:none;padding:6px 10px}.top.compact .status{flex:none;white-space:nowrap}
 @media(max-width:480px){.top.compact{gap:8px;padding:6px 10px}.modtitle{font-size:.95rem}}
+
+.check{display:flex;align-items:center;gap:8px;font-size:.9rem;margin:6px 0 12px;font-weight:400}.check input{width:auto;margin:0}
+td input[type=text]{min-width:110px}
