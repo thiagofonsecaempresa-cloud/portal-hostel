@@ -1,11 +1,11 @@
 <!doctype html>
 <html lang="pt-BR">
 <head>
-<script src="../../shim.js?v=13"></script>
+<script src="../../shim.js?v=14"></script>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Financeiro do Hostel</title>
-<link rel="stylesheet" href="../../theme.css?v=13">
+<link rel="stylesheet" href="../../theme.css?v=14">
 <style>
   :root{--bg:#f6f1e6;--card:#fff;--ink:#1f2a1a;--muted:#6b7563;--line:#e4dccb;--rec:#4f7a3a;--desp:#c8923a;--saldo:#22381a;--bad:#a5392b;--soft:#f1ecdd}
   *{box-sizing:border-box}
@@ -176,8 +176,17 @@
   var $ = function (id) { return document.getElementById(id); };
   var CATS = {
     receita: ['Diárias', 'Reservas online', 'Lavanderia', 'Eventos', 'Outras receitas'],
-    despesa: ['Aluguel', 'Salários', 'Energia', 'Água', 'Internet', 'Limpeza e insumos', 'Manutenção', 'Lavanderia', 'Impostos e taxas', 'Marketing', 'Outras despesas']
+    despesa: [
+      // Mesma base da Gestão de custos (F = custo fixo, V = custo variável)
+      'Pró-labore|F', 'Água|F', 'Contador|F', 'Prod Limpeza|F', 'Prod Higiene|F', 'Prod Lavanderia|F', 'Lavanderia|F', 'Luz|F', 'Internet|F',
+      'IMPOSTOS (IPTU/DARF/DANF)|F', 'Sistema|F', 'Faxina|F', 'Aluguel|F', 'Seguro|F', 'Salário Funcionários|F', 'Itens para venda|F',
+      'Material Obra|V', 'Itens para Quartos|V', 'Mão Obra (pedreiro/elet/pint)|V', 'Itens Áreas Comuns|V', 'Cartões Investimento|V', 'Boletos Investimentos|V',
+      'Outros|V', 'Roupa de cama e banho (reposição)|V', 'HOTEL 2|V', 'Não especificados|V', 'Café da manhã|V', 'Empréstimos|V',
+      'Gás|V', 'Manutenção e reparos|V', 'Comissões de plataformas|V', 'Taxas de cartão|V', 'Impostos sobre faturamento|V', 'Materiais de consumo|V'
+    ]
   };
+  var KIND = {};
+  CATS.despesa = CATS.despesa.map(function (s) { var p = s.split('|'); if (p[1]) KIND[p[0]] = p[1] === 'F' ? 'Custo fixo' : 'Custo variável'; return p[0]; });
   var entries = {};
   var tipo = 'receita', editId = null;
   var moneyF = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' });
@@ -284,7 +293,7 @@
   // ---- formulário ----
   function setTipo(t) {
     tipo = t; $('tRec').className = t === 'receita' ? 'on r' : ''; $('tDesp').className = t === 'despesa' ? 'on d' : '';
-    $('cats').innerHTML = catList(t).map(function (c) { return '<option value="' + esc(c) + '">'; }).join('');
+    $('cats').innerHTML = catList(t).map(function (c) { return '<option value="' + esc(c) + '"' + (KIND[c] ? ' label="' + KIND[c] + '"' : '') + '>'; }).join('');
   }
   function msg(t, err) { var m = $('formMsg'); m.textContent = t || ''; m.className = 'msg' + (err ? ' err' : ''); }
   function resetForm() {
@@ -491,7 +500,7 @@
     var s = CATS[tp].slice(); Object.keys(entries).forEach(function (k) { var e = entries[k]; if (e.type === tp && s.indexOf(e.category) < 0) s.push(e.category); }); return s;
   }
   function fillLists() {
-    var mk = function (id, tp) { var d = $(id); if (!d) { $('cats').insertAdjacentHTML('afterend', '<datalist id="' + id + '"></datalist>'); d = $(id); } d.innerHTML = catList(tp).map(function (c) { return '<option value="' + esc(c) + '">'; }).join(''); };
+    var mk = function (id, tp) { var d = $(id); if (!d) { $('cats').insertAdjacentHTML('afterend', '<datalist id="' + id + '"></datalist>'); d = $(id); } d.innerHTML = catList(tp).map(function (c) { return '<option value="' + esc(c) + '"' + (KIND[c] ? ' label="' + KIND[c] + '"' : '') + '>'; }).join(''); };
     mk('catsR', 'receita'); mk('catsD', 'despesa');
   }
   fillLists();
