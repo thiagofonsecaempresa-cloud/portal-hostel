@@ -1,11 +1,11 @@
 <!doctype html>
 <html lang="pt-BR">
 <head>
-<script src="../../shim.js?v=10"></script>
+<script src="../../shim.js?v=11"></script>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Financeiro do Hostel</title>
-<link rel="stylesheet" href="../../theme.css?v=10">
+<link rel="stylesheet" href="../../theme.css?v=11">
 <style>
   :root{--bg:#f6f1e6;--card:#fff;--ink:#1f2a1a;--muted:#6b7563;--line:#e4dccb;--rec:#4f7a3a;--desp:#c8923a;--saldo:#22381a;--bad:#a5392b;--soft:#f1ecdd}
   *{box-sizing:border-box}
@@ -48,6 +48,9 @@
   .tag.r{background:#e3eed9;color:#2f4a24}.tag.d{background:#f7ead2;color:#7a5314}
   .empty{padding:18px;text-align:center;color:var(--muted)}
   .msg{min-height:1.2em;font-weight:600}.msg.err{color:var(--bad)}
+  .help{background:var(--soft);border-radius:10px;padding:8px 12px;margin:0 0 10px}
+  .help summary{cursor:pointer;font-weight:700}.helpbody p{margin:8px 0}
+  .sugtag{display:inline-block;font-size:.7rem;font-weight:700;color:#7a5314;background:#f7ead2;border-radius:99px;padding:1px 7px;margin-top:3px}
   .imp-row.dup{opacity:.55}
   .imp-row input[type=text],.imp-row select{padding:6px 8px;font-size:.85rem}
   .imp-row td{vertical-align:middle}
@@ -112,9 +115,16 @@
 <section class="card" id="impCard">
   <h2>Importar extrato do banco</h2>
   <p class="muted small">Baixe o extrato no app/internet banking em <b>OFX</b> (ou CSV) e envie aqui. Você revisa cada linha antes de importar. Nubank: Exportar extrato → OFX. Santander: Conta Corrente → Extrato (Money).</p>
+  <details class="help"><summary>ⓘ Como baixar o extrato no seu banco</summary>
+    <div class="helpbody">
+      <p><b>Nubank</b> (app): toque em <b>Conta</b> → <b>Pedir extrato</b> (ou o saldo → <b>Exportar extrato</b>) → escolha o período → <b>Exportar</b>. O Nubank envia o extrato por e-mail em <b>PDF, OFX e CSV</b>. Use o <b>OFX</b> (ou o CSV).</p>
+      <p><b>Santander</b> (internet banking, no computador): <b>Conta Corrente</b> → <b>Extrato</b> → escolha o período → salve o extrato no formato <b>Money / OFX</b>. Se o Santander pedir confirmação pelo celular (QR Code), faça pelo app.</p>
+      <p><b>Outros bancos</b>: procure "Exportar extrato" e escolha <b>OFX</b> (às vezes aparece como "Money 2000" ou "Microsoft Money").</p>
+      <p class="muted small">Os menus dos bancos mudam de tempos em tempos; se não achar, use a busca do app/site do banco por "extrato OFX". PDF não funciona aqui.</p>
+    </div></details>
   <div class="impbar">
     <div><label for="impFile">Arquivo (.ofx ou .csv)</label><input id="impFile" type="file" accept=".ofx,.csv,.txt"></div>
-    <div><label for="impUnit">Unidade deste extrato</label><select id="impUnit"><option value="SR">SR</option><option value="MK">MK</option></select></div>
+    <div><label for="impUnit">Unidade (aplica a todas as linhas)</label><select id="impUnit"><option value="">— escolher em cada linha —</option><option value="SR">SR</option><option value="MK">MK</option></select></div>
   </div>
   <p id="impMsg" class="msg" role="status"></p>
   <div id="impReview" style="display:none">
@@ -269,7 +279,7 @@
   // ---- formulário ----
   function setTipo(t) {
     tipo = t; $('tRec').className = t === 'receita' ? 'on r' : ''; $('tDesp').className = t === 'despesa' ? 'on d' : '';
-    $('cats').innerHTML = CATS[t].map(function (c) { return '<option value="' + esc(c) + '">'; }).join('');
+    $('cats').innerHTML = catList(t).map(function (c) { return '<option value="' + esc(c) + '">'; }).join('');
   }
   function msg(t, err) { var m = $('formMsg'); m.textContent = t || ''; m.className = 'msg' + (err ? ' err' : ''); }
   function resetForm() {
@@ -408,8 +418,8 @@
         + '<td>' + r.date.split('-').reverse().join('/') + '</td><td>' + esc(r.desc) + (r.dup ? '<br><span class="tag">já importado</span>' : '') + '</td>'
         + '<td class="n ' + (r.amount >= 0 ? 'pos' : 'neg') + '">' + money(r.amount) + '</td>'
         + '<td><select data-i="' + i + '" data-f="type"><option value="receita"' + (r.type === 'receita' ? ' selected' : '') + '>Receita</option><option value="despesa"' + (r.type === 'despesa' ? ' selected' : '') + '>Despesa</option></select></td>'
-        + '<td><input type="text" data-i="' + i + '" data-f="cat" list="' + (r.type === 'receita' ? 'catsR' : 'catsD') + '" value="' + esc(r.cat) + '" placeholder="Categoria" maxlength="40"></td>'
-        + '<td><select data-i="' + i + '" data-f="unit"><option' + (r.unit === 'SR' ? ' selected' : '') + '>SR</option><option' + (r.unit === 'MK' ? ' selected' : '') + '>MK</option></select></td></tr>';
+        + '<td><input type="text" data-i="' + i + '" data-f="cat" list="' + (r.type === 'receita' ? 'catsR' : 'catsD') + '" value="' + esc(r.cat) + '" placeholder="Escolha ou crie uma" maxlength="40">' + (r.sug && r.cat ? '<br><span class="sugtag">sugerida · confirme ou altere</span>' : '') + '</td>'
+        + '<td><select data-i="' + i + '" data-f="unit"><option value=""' + (!r.unit ? ' selected' : '') + '>—</option><option' + (r.unit === 'SR' ? ' selected' : '') + '>SR</option><option' + (r.unit === 'MK' ? ' selected' : '') + '>MK</option></select></td></tr>';
     });
     $('impTbl').innerHTML = h + '</tbody>';
     impSummary();
@@ -417,9 +427,9 @@
   function impSummary() {
     var sel = imp.filter(function (r) { return r.on; }), ent = 0, sai = 0;
     sel.forEach(function (r) { if (r.type === 'receita') ent += Math.abs(r.amount); else sai += Math.abs(r.amount); });
-    var dups = imp.filter(function (r) { return r.dup; }).length, nocat = sel.filter(function (r) { return !r.cat.trim(); }).length;
+    var dups = imp.filter(function (r) { return r.dup; }).length, nocat = sel.filter(function (r) { return !r.cat.trim(); }).length, nouni = sel.filter(function (r) { return !r.unit; }).length, nsug = sel.filter(function (r) { return r.sug && r.cat; }).length;
     $('impSummary').innerHTML = '<b>' + imp.length + '</b> linhas no arquivo · <b>' + sel.length + '</b> selecionadas · Receitas ' + money(ent) + ' · Despesas ' + money(sai)
-      + (dups ? ' · ' + dups + ' já importadas (desmarcadas)' : '') + (nocat ? '<br>⚠ ' + nocat + ' selecionada(s) sem categoria — preencha para importar.' : '');
+      + (dups ? ' · ' + dups + ' já importadas (desmarcadas)' : '') + (nsug ? '<br>💡 ' + nsug + ' categoria(s) sugerida(s) pelo sistema — confira.' : '') + (nocat ? '<br>⚠ ' + nocat + ' selecionada(s) sem categoria.' : '') + (nouni ? '<br>⚠ ' + nouni + ' selecionada(s) sem unidade (SR ou MK).' : '');
     $('impGo').textContent = 'Importar ' + sel.length + ' selecionados';
   }
   function impClose() { imp = []; $('impReview').style.display = 'none'; $('impFile').value = ''; }
@@ -436,21 +446,21 @@
         imp = rows.map(function (r) {
           var tp = r.amount >= 0 ? 'receita' : 'despesa', s = srcOf(r); if (seen[s]) { seen[s]++; s += '#' + seen[s]; } else seen[s] = 1;
           var dup = !!have[s];
-          return { date: r.date, amount: r.amount, desc: r.desc, src: s, type: tp, cat: suggest(tp, r.desc), unit: $('impUnit').value, dup: dup, on: !dup };
+          var sg = suggest(tp, r.desc); return { date: r.date, amount: r.amount, desc: r.desc, src: s, type: tp, cat: sg, sug: !!sg, unit: $('impUnit').value, dup: dup, on: !dup };
         }).sort(function (a, b) { return a.date < b.date ? 1 : -1; });
         impMsg(''); $('impReview').style.display = ''; impTable();
       } catch (e) { impMsg(e.message || 'Arquivo não reconhecido.', true); }
     };
     rd.readAsArrayBuffer(file);
   });
-  $('impUnit').addEventListener('change', function () { imp.forEach(function (r) { r.unit = $('impUnit').value; }); if (imp.length) impTable(); });
+  $('impUnit').addEventListener('change', function () { if (!$('impUnit').value) return; imp.forEach(function (r) { r.unit = $('impUnit').value; }); if (imp.length) impTable(); });
   $('impTbl').addEventListener('change', function (ev) {
     var el = ev.target;
     if (el.id === 'impAll') { imp.forEach(function (r) { r.on = el.checked; }); impTable(); return; }
     var i = el.dataset.i; if (i == null) return; var r = imp[i], f = el.dataset.f;
     if (f === 'on') r.on = el.checked;
-    else if (f === 'type') { r.type = el.value; r.cat = suggest(r.type, r.desc); impTable(); return; }
-    else if (f === 'cat') r.cat = el.value;
+    else if (f === 'type') { r.type = el.value; r.cat = suggest(r.type, r.desc); r.sug = !!r.cat; impTable(); return; }
+    else if (f === 'cat') { r.cat = el.value; r.sug = false; var tg = el.parentNode.querySelector('.sugtag'); if (tg) tg.remove(); }
     else if (f === 'unit') r.unit = el.value;
     impSummary();
   });
@@ -459,6 +469,7 @@
     var sel = imp.filter(function (r) { return r.on; });
     if (!sel.length) { impMsg('Nenhuma linha selecionada.', true); return; }
     if (sel.some(function (r) { return !r.cat.trim(); })) { impMsg('Preencha a categoria de todas as linhas selecionadas.', true); impSummary(); return; }
+    if (sel.some(function (r) { return !r.unit; })) { impMsg('Escolha a unidade (SR ou MK) de todas as linhas selecionadas.', true); impSummary(); return; }
     var learn = $('impLearn').checked, minM = '9999-99', maxM = '0000-00';
     sel.forEach(function (r, n) {
       var id = Date.now().toString(36) + n.toString(36) + Math.random().toString(36).slice(2, 6);
@@ -469,13 +480,20 @@
     });
     if (learn) localStorage.setItem('rules', JSON.stringify(rules));
     if (minM < $('fFrom').value) $('fFrom').value = minM; if (maxM > $('fTo').value) $('fTo').value = maxM;
-    var n = sel.length; impClose(); impMsg(n + ' lançamentos importados.'); render();
+    var n = sel.length; impClose(); impMsg(n + ' lançamentos importados.'); fillLists(); render();
   };
-  $('cats').insertAdjacentHTML('afterend', '<datalist id="catsR">' + CATS.receita.map(function (c) { return '<option value="' + esc(c) + '">'; }).join('') + '</datalist><datalist id="catsD">' + CATS.despesa.map(function (c) { return '<option value="' + esc(c) + '">'; }).join('') + '</datalist>');
+  function catList(tp) {
+    var s = CATS[tp].slice(); Object.keys(entries).forEach(function (k) { var e = entries[k]; if (e.type === tp && s.indexOf(e.category) < 0) s.push(e.category); }); return s;
+  }
+  function fillLists() {
+    var mk = function (id, tp) { var d = $(id); if (!d) { $('cats').insertAdjacentHTML('afterend', '<datalist id="' + id + '"></datalist>'); d = $(id); } d.innerHTML = catList(tp).map(function (c) { return '<option value="' + esc(c) + '">'; }).join(''); };
+    mk('catsR', 'receita'); mk('catsD', 'despesa');
+  }
+  fillLists();
 
   var td = new Date(); $('eDate').value = td.getFullYear() + '-' + pad(td.getMonth() + 1) + '-' + pad(td.getDate());
   $('fFrom').value = addMs(nowYm, -5); $('fTo').value = nowYm;
-  setTipo('receita'); load(); render();
+  setTipo('receita'); load(); fillLists(); setTipo('receita'); render();
 })();
 </script>
 </body>
